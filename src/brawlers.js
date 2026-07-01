@@ -8,13 +8,12 @@ export const BRAWLERS = [
     accent: 0x8fd6ff,
     hp: 250,
     speed: 5.4,
-    reloadTime: 1.0,
+    reloadTime: 0.82,
     fireRate: 0.58,
     damage: 25,
     attack: 'Rosa azul de média distância',
     super: 'Prisão de correntes em área',
-    portrait: 'assets/portraits/joao-chain-rose.png',
-    sprite: 'assets/sprites/joao-chain-rose-fullbody.png'
+    portrait: 'assets/portraits/joao-chain-rose.png'
   },
   {
     id: 'luan',
@@ -25,13 +24,12 @@ export const BRAWLERS = [
     accent: 0xe5484d,
     hp: 350,
     speed: 5.8,
-    reloadTime: 0.72,
+    reloadTime: 0.58,
     fireRate: 0.34,
     damage: 15,
     attack: 'Corte de espada em cone',
     super: 'Avanço giratório em área',
-    portrait: 'assets/portraits/luan-blade-dash.png',
-    sprite: 'assets/sprites/luan-blade-dash-fullbody.png'
+    portrait: 'assets/portraits/luan-blade-dash.png'
   },
   {
     id: 'djonga',
@@ -42,13 +40,12 @@ export const BRAWLERS = [
     accent: 0xff9d8e,
     hp: 450,
     speed: 5.7,
-    reloadTime: 0.65,
+    reloadTime: 0.52,
     fireRate: 0.28,
     damage: 8,
     attack: 'Sequência de 3 socos',
     super: 'Salto com impacto na aterrissagem',
-    portrait: 'assets/portraits/djonga-combo-strike.png',
-    sprite: 'assets/sprites/djonga-combo-strike-fullbody.png'
+    portrait: 'assets/portraits/djonga-combo-strike.png'
   },
   {
     id: 'thomas',
@@ -59,13 +56,12 @@ export const BRAWLERS = [
     accent: 0x74d8ff,
     hp: 220,
     speed: 6.2,
-    reloadTime: 0.82,
+    reloadTime: 0.68,
     fireRate: 0.33,
     damage: 6,
     attack: '4 lâminas em leque',
     super: 'Invisibilidade temporária',
-    portrait: 'assets/portraits/thomas-phantom-stealth.png',
-    sprite: 'assets/sprites/thomas-phantom-stealth-fullbody.png'
+    portrait: 'assets/portraits/thomas-phantom-stealth.png'
   },
   {
     id: 'gui',
@@ -76,13 +72,12 @@ export const BRAWLERS = [
     accent: 0x9b5cff,
     hp: 280,
     speed: 5.4,
-    reloadTime: 1.1,
+    reloadTime: 0.95,
     fireRate: 0.68,
     damage: 18,
     attack: 'Orbe mágico de longo alcance',
     super: 'Mão mágica de controle',
-    portrait: 'assets/portraits/gui-arcane-control.png',
-    sprite: 'assets/sprites/gui-arcane-control-fullbody.png'
+    portrait: 'assets/portraits/gui-arcane-control.png'
   },
   {
     id: 'lorenzo',
@@ -93,13 +88,12 @@ export const BRAWLERS = [
     accent: 0x00d7c7,
     hp: 400,
     speed: 5.1,
-    reloadTime: 0.9,
+    reloadTime: 0.68,
     fireRate: 0.36,
     damage: 6,
     attack: 'Rajada larga de 9 estilhaços',
     super: 'Torreta de cura em área',
-    portrait: 'assets/portraits/lorenzo-field-support.png',
-    sprite: 'assets/sprites/lorenzo-field-support-fullbody.png'
+    portrait: 'assets/portraits/lorenzo-field-support.png'
   },
   {
     id: 'ministro',
@@ -110,13 +104,12 @@ export const BRAWLERS = [
     accent: 0x39d98a,
     hp: 200,
     speed: 5.5,
-    reloadTime: 0.78,
+    reloadTime: 0.68,
     fireRate: 0.36,
     damage: 30,
     attack: 'Dardo de longo alcance com efeito contínuo',
     super: 'Frasco lançado em área',
-    portrait: 'assets/portraits/ministro-tactical-elixir.png',
-    sprite: 'assets/sprites/ministro-tactical-elixir-fullbody.png'
+    portrait: 'assets/portraits/ministro-tactical-elixir.png'
   }
 ];
 

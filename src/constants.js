@@ -1,5 +1,5 @@
-export const ARENA_W = 34;
-export const ARENA_D = 24;
+export const ARENA_W = 60;
+export const ARENA_D = 40;
 
 export const COLORS = {
   grassBase: 0x6dbf3e,
@@ -34,23 +34,36 @@ export const COLORS = {
 };
 
 export const OBSTACLES = [
-  { type: 'wall', x: 6.2, z: 4.2, w: 4.2, d: 0.9, label: 'Pilar de Report' },
-  { type: 'wall', x: 27.8, z: 4.2, w: 4.2, d: 0.9, label: 'Pilar de Report' },
-  { type: 'wall', x: 6.2, z: 19.8, w: 4.2, d: 0.9, label: 'Pilar de Report' },
-  { type: 'wall', x: 27.8, z: 19.8, w: 4.2, d: 0.9, label: 'Pilar de Report' },
-  { type: 'wall', x: 17.0, z: 12.0, w: 1.0, d: 5.0, label: 'Pilar de Report' },
-  { type: 'wall', x: 17.0, z: 5.8, w: 4.2, d: 0.9, label: 'Pilar de Report' },
-  { type: 'wall', x: 17.0, z: 18.2, w: 4.2, d: 0.9, label: 'Pilar de Report' },
+  // Paredes externas internas / pilares grandes, bem espaçados
+  { type: 'wall', x: 9, z: 7, w: 6.0, d: 1.0, label: 'Pilar de Report' },
+  { type: 'wall', x: 51, z: 7, w: 6.0, d: 1.0, label: 'Pilar de Report' },
+  { type: 'wall', x: 9, z: 33, w: 6.0, d: 1.0, label: 'Pilar de Report' },
+  { type: 'wall', x: 51, z: 33, w: 6.0, d: 1.0, label: 'Pilar de Report' },
 
-  { type: 'crate', x: 10.5, z: 8.0, w: 1.15, d: 1.15, hp: 3, label: 'Caixa de Briefing' },
-  { type: 'crate', x: 23.5, z: 8.0, w: 1.15, d: 1.15, hp: 3, label: 'Caixa de Briefing' },
-  { type: 'crate', x: 10.5, z: 16.0, w: 1.15, d: 1.15, hp: 3, label: 'Caixa de Briefing' },
-  { type: 'crate', x: 23.5, z: 16.0, w: 1.15, d: 1.15, hp: 3, label: 'Caixa de Briefing' },
-  { type: 'crate', x: 14.0, z: 12.0, w: 1.15, d: 1.15, hp: 3, label: 'Caixa de Briefing' },
-  { type: 'crate', x: 20.0, z: 12.0, w: 1.15, d: 1.15, hp: 3, label: 'Caixa de Briefing' },
+  { type: 'wall', x: 30, z: 20, w: 1.2, d: 7.0, label: 'Pilar de Report' },
+  { type: 'wall', x: 30, z: 10, w: 6.4, d: 1.0, label: 'Pilar de Report' },
+  { type: 'wall', x: 30, z: 30, w: 6.4, d: 1.0, label: 'Pilar de Report' },
 
-  { type: 'bush', x: 3.2, z: 12.0, w: 4.4, d: 3.2, label: 'Zona de Baixo CTR' },
-  { type: 'bush', x: 30.8, z: 12.0, w: 4.4, d: 3.2, label: 'Zona de Baixo CTR' },
-  { type: 'bush', x: 17.0, z: 2.2, w: 4.5, d: 2.2, label: 'Zona de Baixo CTR' },
-  { type: 'bush', x: 17.0, z: 21.8, w: 4.5, d: 2.2, label: 'Zona de Baixo CTR' }
+  { type: 'wall', x: 18, z: 15, w: 4.4, d: 1.0, label: 'Pilar de Report' },
+  { type: 'wall', x: 42, z: 25, w: 4.4, d: 1.0, label: 'Pilar de Report' },
+  { type: 'wall', x: 18, z: 25, w: 1.0, d: 4.4, label: 'Pilar de Report' },
+  { type: 'wall', x: 42, z: 15, w: 1.0, d: 4.4, label: 'Pilar de Report' },
+
+  // Caixas para carregar Super, sem fechar demais o mapa
+  { type: 'crate', x: 14, z: 11, w: 1.15, d: 1.15, hp: 3, label: 'Caixa de Briefing' },
+  { type: 'crate', x: 46, z: 11, w: 1.15, d: 1.15, hp: 3, label: 'Caixa de Briefing' },
+  { type: 'crate', x: 14, z: 29, w: 1.15, d: 1.15, hp: 3, label: 'Caixa de Briefing' },
+  { type: 'crate', x: 46, z: 29, w: 1.15, d: 1.15, hp: 3, label: 'Caixa de Briefing' },
+  { type: 'crate', x: 24, z: 20, w: 1.15, d: 1.15, hp: 3, label: 'Caixa de Briefing' },
+  { type: 'crate', x: 36, z: 20, w: 1.15, d: 1.15, hp: 3, label: 'Caixa de Briefing' },
+  { type: 'crate', x: 30, z: 15.8, w: 1.15, d: 1.15, hp: 3, label: 'Caixa de Briefing' },
+  { type: 'crate', x: 30, z: 24.2, w: 1.15, d: 1.15, hp: 3, label: 'Caixa de Briefing' },
+
+  // Moitas maiores e mais úteis para emboscada/rotação
+  { type: 'bush', x: 5.0, z: 20.0, w: 7.0, d: 5.4, label: 'Zona de Baixo CTR' },
+  { type: 'bush', x: 55.0, z: 20.0, w: 7.0, d: 5.4, label: 'Zona de Baixo CTR' },
+  { type: 'bush', x: 30.0, z: 4.0, w: 8.0, d: 3.5, label: 'Zona de Baixo CTR' },
+  { type: 'bush', x: 30.0, z: 36.0, w: 8.0, d: 3.5, label: 'Zona de Baixo CTR' },
+  { type: 'bush', x: 16.0, z: 20.0, w: 4.4, d: 6.5, label: 'Zona de Baixo CTR' },
+  { type: 'bush', x: 44.0, z: 20.0, w: 4.4, d: 6.5, label: 'Zona de Baixo CTR' }
 ];

@@ -37,9 +37,9 @@ scene.fog = new THREE.Fog(COLORS.fog, 26, 46);
 const target = new THREE.Vector3(ARENA_W / 2, 0, ARENA_D / 2);
 const ELEV = THREE.MathUtils.degToRad(55);
 const AZ = THREE.MathUtils.degToRad(28);
-const DIST = 30;
+const DIST = 24;
 
-const VIEW_SIZE = 13.2;
+const VIEW_SIZE = 10.8;
 const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
 camera.position.set(
   target.x + DIST * Math.cos(ELEV) * Math.sin(AZ),
@@ -47,6 +47,29 @@ camera.position.set(
   target.z + DIST * Math.cos(ELEV) * Math.cos(AZ)
 );
 camera.lookAt(target);
+const cameraFocus = target.clone();
+const cameraOffset = new THREE.Vector3(
+  DIST * Math.cos(ELEV) * Math.sin(AZ),
+  DIST * Math.sin(ELEV),
+  DIST * Math.cos(ELEV) * Math.cos(AZ)
+);
+
+function updateCamera(dt) {
+  const desired = player
+    ? new THREE.Vector3(
+        clamp(player.x, VIEW_SIZE * 0.7, ARENA_W - VIEW_SIZE * 0.7),
+        0,
+        clamp(player.z, VIEW_SIZE * 0.62, ARENA_D - VIEW_SIZE * 0.62)
+      )
+    : target;
+  cameraFocus.lerp(desired, 1 - Math.pow(0.00005, dt));
+  camera.position.copy(cameraFocus).add(cameraOffset);
+  camera.lookAt(cameraFocus);
+  if (sun && sun.target) {
+    sun.target.position.copy(cameraFocus);
+    sun.position.set(cameraFocus.x + 10, 18, cameraFocus.z + 6);
+  }
+}
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.shadowMap.enabled = true;
@@ -120,6 +143,7 @@ let projectiles = [];
 let effects = [];
 const previewGroup = new THREE.Group();
 previewGroup.visible = false;
+previewGroup.renderOrder = 1000;
 scene.add(previewGroup);
 let state = 'menu';
 let shakeTimer = 0;
@@ -173,14 +197,14 @@ renderBrawlerCards();
 
 function spawnPointFor(slot) {
   const points = [
-    { x: 2.0, z: 2.0 },
-    { x: ARENA_W - 2.0, z: ARENA_D - 2.0 },
-    { x: ARENA_W - 2.0, z: 2.0 },
-    { x: 2.0, z: ARENA_D - 2.0 },
-    { x: ARENA_W / 2, z: 2.0 },
-    { x: ARENA_W / 2, z: ARENA_D - 2.0 },
-    { x: 2.0, z: ARENA_D / 2 },
-    { x: ARENA_W - 2.0, z: ARENA_D / 2 }
+    { x: 4.0, z: 4.0 },
+    { x: ARENA_W - 4.0, z: ARENA_D - 4.0 },
+    { x: ARENA_W - 4.0, z: 4.0 },
+    { x: 4.0, z: ARENA_D - 4.0 },
+    { x: ARENA_W / 2, z: 4.0 },
+    { x: ARENA_W / 2, z: ARENA_D - 4.0 },
+    { x: 4.0, z: ARENA_D / 2 },
+    { x: ARENA_W - 4.0, z: ARENA_D / 2 }
   ];
   return points[slot % points.length];
 }
@@ -207,14 +231,15 @@ function clearPreview() {
 }
 
 function previewMaterial(color, opacity = 0.25) {
-  return new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, side: THREE.DoubleSide });
+  return new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, depthTest: false, side: THREE.DoubleSide });
 }
 
 function addCirclePreview(x, z, radius, color, opacity = 0.24) {
   const geo = new THREE.CircleGeometry(radius, 48);
   const mesh = new THREE.Mesh(geo, previewMaterial(color, opacity));
   mesh.rotation.x = -Math.PI / 2;
-  mesh.position.set(x, 0.035, z);
+  mesh.position.set(x, 0.06, z);
+  mesh.renderOrder = 1000;
   previewGroup.add(mesh);
 
   const ring = new THREE.LineLoop(
@@ -222,8 +247,9 @@ function addCirclePreview(x, z, radius, color, opacity = 0.24) {
       const a = (i / 64) * Math.PI * 2;
       return new THREE.Vector3(x + Math.cos(a) * radius, 0.052, z + Math.sin(a) * radius);
     })),
-    new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.9 })
+    new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.9, depthTest: false })
   );
+  ring.renderOrder = 1001;
   previewGroup.add(ring);
 }
 
@@ -240,7 +266,8 @@ function addConePreview(x, z, angle, range, arc, color) {
   const mesh = new THREE.Mesh(geo, previewMaterial(color, 0.22));
   mesh.rotation.x = -Math.PI / 2;
   mesh.rotation.z = -angle;
-  mesh.position.set(x, 0.04, z);
+  mesh.position.set(x, 0.065, z);
+  mesh.renderOrder = 1000;
   previewGroup.add(mesh);
 }
 
@@ -253,6 +280,7 @@ function addLinePreview(x, z, angle, range, width, color) {
     z + Math.cos(angle) * range * 0.5
   );
   mesh.rotation.y = angle;
+  mesh.renderOrder = 1000;
   previewGroup.add(mesh);
 }
 
@@ -479,6 +507,7 @@ function addProjectile(data, ghost = false) {
     !!data.big,
     ghost,
     {
+      brawlerId: data.brawlerId,
       color: data.color,
       size: data.size,
       glowSize: data.glowSize,
@@ -860,6 +889,28 @@ function positionTag(el, x, z) {
   el.style.top = ((-p.y * 0.5 + 0.5) * window.innerHeight) + 'px';
 }
 
+
+function sameBushAsLocal(rp) {
+  if (!player || !rp) return false;
+  return world.bushes.some(b =>
+    world.circleOverlapsBush(player.x, player.z, player.radius * 0.72, b) &&
+    world.circleOverlapsBush(rp.x, rp.z, 0.45, b)
+  );
+}
+
+function remoteVisibilityOpacity(rp) {
+  if (!rp || rp.isDown) return 0.28;
+  if (rp.stealth) return 0;
+  if (rp.inBush && !sameBushAsLocal(rp)) return 0;
+  return 1;
+}
+
+function applyRemoteVisibility() {
+  for (const rp of remotePlayers.values()) {
+    rp.setVisibilityOpacity(remoteVisibilityOpacity(rp));
+  }
+}
+
 function updateNameTags() {
   if (player) {
     const tag = ensureNameTag('__me');
@@ -868,6 +919,9 @@ function updateNameTags() {
   }
   for (const [id, rp] of remotePlayers) {
     const tag = ensureNameTag(id);
+    const visibleOpacity = remoteVisibilityOpacity(rp);
+    tag.style.display = visibleOpacity > 0.01 ? 'block' : 'none';
+    if (visibleOpacity <= 0.01) continue;
     updateNameTag(tag, `${rp.name} · ${rp.brawler.name} · ${Math.round(rp.hp)}/${rp.hpMax}${rp.isDown ? ' · CAÍDO' : ''}`, rp.hp, rp.hpMax, rp.isDown);
     positionTag(tag, rp.x, rp.z);
   }
@@ -901,6 +955,7 @@ function update(dt) {
   ps.update(dt);
 
   for (const rp of remotePlayers.values()) rp.update(dt);
+  applyRemoteVisibility();
 
   netSendTimer += dt;
   if (netSendTimer >= NET_SEND_INTERVAL) {
@@ -927,24 +982,14 @@ function loop(now) {
 
   if (state === 'playing') update(dt);
 
-  const shakeOffset = shakeTimer > 0
-    ? new THREE.Vector3((Math.random() - 0.5) * shakeTimer * 0.5, (Math.random() - 0.5) * shakeTimer * 0.5, 0)
-    : null;
+  updateCamera(dt);
 
-  if (shakeOffset) {
-    camera.position.x += shakeOffset.x * 0.02;
-    camera.position.y += shakeOffset.y * 0.02;
+  if (shakeTimer > 0) {
+    camera.position.x += (Math.random() - 0.5) * shakeTimer * 0.045;
+    camera.position.y += (Math.random() - 0.5) * shakeTimer * 0.045;
   }
 
   renderer.render(scene, camera);
-
-  if (shakeOffset) {
-    camera.position.set(
-      target.x + DIST * Math.cos(ELEV) * Math.sin(AZ),
-      DIST * Math.sin(ELEV),
-      target.z + DIST * Math.cos(ELEV) * Math.cos(AZ)
-    );
-  }
 
   requestAnimationFrame(loop);
 }

@@ -85,3 +85,14 @@ assets/concepts/    concept sheets dos 7 personagens caracterizados
 Nesta versão, os personagens jogáveis passaram a usar uma camada visual principal baseada diretamente nos concepts aprovados. Cada brawler recebeu um sprite recortado do próprio concept art em `assets/sprites/`, aplicado por cima do mesh 3D modular.
 
 A prioridade desta fase foi deixar o personagem em jogo o mais fiel possível à arte criada: silhueta, roupa, cabelo, acessórios, arma e paleta. O mesh 3D continua existindo por baixo para manter sombra, posição, colisão, mira, ataques e compatibilidade com o multiplayer, mas fica suavizado visualmente para não competir com o sprite do concept.
+
+## Fase 10 - Correções de jogabilidade e visibilidade
+
+- Removida a solução de sprites colados sobre o boneco jogável. O jogo voltou para personagem 3D modular para evitar visual chapado e bugs de leitura.
+- Arena ampliada para 60x40, com obstáculos e moitas reposicionados.
+- Câmera agora acompanha o jogador local com suavização, em vez de ficar fixa no centro do mapa.
+- Spawns reposicionados em cantos/laterais com mais distância entre jogadores.
+- Projéteis agora têm visual específico por personagem: rosa azul, lâminas, orbe, sucata/rajada e dardo de elixir.
+- Thomas fica invisível para outros jogadores durante a Super.
+- Jogadores dentro de moitas ficam invisíveis para inimigos fora da mesma moita. Se os dois estiverem na mesma moita, eles se enxergam.
+- Preview de alcance com Shift recebeu prioridade visual para aparecer por cima do chão e do cenário.

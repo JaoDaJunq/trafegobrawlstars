@@ -553,6 +553,21 @@ function buildWeapon(gunPivot, brawler, visual) {
   addSphere(gunPivot, 0.18, new THREE.Vector3(0, 0.02, 0.98), brawler.accent, new THREE.Vector3(1, 0.75, 1), 0.06);
 }
 
+
+function bodyScaleFor(v) {
+  if (v.bodyType === 'fighter') return new THREE.Vector3(1.08, 1.05, 1.05);
+  if (v.bodyType === 'athletic') return new THREE.Vector3(1.04, 1.02, 1.02);
+  if (v.bodyType === 'slim') return new THREE.Vector3(0.92, 1.02, 0.94);
+  return new THREE.Vector3(1, 1, 1);
+}
+
+function weaponScaleFor(v) {
+  if (v.weapon === 'emberSword') return new THREE.Vector3(1.08, 1.08, 1.08);
+  if (v.weapon === 'medCannon') return new THREE.Vector3(1.18, 1.18, 1.18);
+  if (v.weapon === 'fists') return new THREE.Vector3(1.08, 1.08, 1.08);
+  return new THREE.Vector3(1, 1, 1);
+}
+
 export function buildBrawlerMesh(bodyColor, brawlerId = 'joao') {
   const brawler = getBrawler(brawlerId);
   const visual = visualFor(brawler);
@@ -582,8 +597,8 @@ export function buildBrawlerMesh(bodyColor, brawlerId = 'joao') {
   shadowMesh.position.y = 0.02;
   root.add(shadowMesh);
 
-  const conceptSprite = addConceptSprite(root, brawler);
-  softenPrimitiveMeshForConcept(root, conceptSprite);
+  bodyPivot.scale.copy(bodyScaleFor(visual));
+  gunPivot.scale.copy(weaponScaleFor(visual));
 
   return { root, bodyPivot, gunPivot, shadowMesh };
 }
@@ -591,8 +606,8 @@ export function buildBrawlerMesh(bodyColor, brawlerId = 'joao') {
 export function setMeshOpacity(root, shadowMesh, opacity) {
   root.traverse(obj => {
     if (obj.isMesh && obj.material && obj !== shadowMesh) {
-      obj.material.transparent = true;
-      obj.material.opacity = obj.userData?.isConceptSprite ? opacity : Math.min(opacity, 0.55);
+      obj.material.transparent = opacity < 0.99;
+      obj.material.opacity = opacity;
     }
     if (obj.isSprite && obj.material) {
       obj.material.transparent = true;

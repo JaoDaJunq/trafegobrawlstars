@@ -103,9 +103,14 @@ export class RemotePlayer {
     this.root.position.set(this.x, hop, this.z);
     this.bodyPivot.rotation.y = this.bodyAngle;
     this.gunPivot.rotation.y = this.aimAngle;
-    const opacity = this.isDown ? 0.28 : (this.stealth ? 0.22 : (this.inBush ? 0.4 : 1));
+    const opacity = this.isDown ? 0.28 : 1;
     setMeshOpacity(this.root, this.shadowMesh, opacity);
     this.root.scale.setScalar(this.isDown ? 0.82 : 1);
+  }
+
+  setVisibilityOpacity(opacity) {
+    this.root.visible = opacity > 0.01;
+    if (this.root.visible) setMeshOpacity(this.root, this.shadowMesh, opacity);
   }
 
   applyHealth(hp, down = false) {

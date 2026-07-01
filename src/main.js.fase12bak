@@ -8,7 +8,7 @@ import { ParticleSystem } from './particles.js';
 import { Input } from './input.js';
 import { Room, randomPin } from './network.js';
 import { BRAWLERS, DEFAULT_BRAWLER_ID, getBrawler } from './brawlers.js';
-import { ConeSlash, ImpactArea, ChainTrap, DashAttack, LeapAttack, HealTurret, SmokeCloud, PoisonPuddle } from './attackEffects.js';
+import { ConeSlash, ImpactArea, ChainTrap, DashAttack, LeapAttack, HealTurret } from './attackEffects.js';
 import { clamp } from './utils.js';
 
 const canvasHolder = document.getElementById('canvas-holder');
@@ -197,7 +197,6 @@ let started = false;
 let matchElapsed = 0;
 let toxicDamageTimer = 0;
 let toxicVisualTimer = 0;
-let regenBroadcastTimer = 0;
 let toxicMesh = null;
 let toxicRing = null;
 let lastDownBroadcast = false;
@@ -330,7 +329,6 @@ function switchBrawlerInOpenMode(id) {
   player = new Player(x, z, id, room.mySlot);
   scene.add(player.root);
   openRespawnTimer = 0;
-  regenBroadcastTimer = 0;
   lastDownBroadcast = false;
   updateHudStatic();
   renderSwitchGrid();
@@ -610,7 +608,6 @@ function respawnOpenPlayer() {
   player.invulnTimer = 1.5;
   player.root.visible = true;
   openRespawnTimer = 0;
-  regenBroadcastTimer = 0;
   lastDownBroadcast = false;
   broadcastHealth('open-respawn');
 }
@@ -653,7 +650,7 @@ function applyIncomingDamage(amount, point, event = {}) {
     const len = Math.hypot(dx, dz) || 1;
     const pullDist = Math.min(len, event.pullDistance || 2.8);
     player.tryMove(player.x + (dx / len) * pullDist, player.z + (dz / len) * pullDist, world);
-    player.applyRoot(0.45);
+    player.root(0.45);
   }
 
   const rootTime = event.kind === 'chain' ? 1.35 : 0;
@@ -718,7 +715,6 @@ function startGame() {
   toxicDamageTimer = 0;
   toxicVisualTimer = 0;
   openRespawnTimer = 0;
-  regenBroadcastTimer = 0;
   lastDownBroadcast = false;
   if (selectedGameMode === 'battle') rebuildToxicVisual(true);
   else {
@@ -959,11 +955,10 @@ function spawnAttack(event, ghost = false) {
   if (event.kind === 'projectile') {
     addProjectile(event, ghost);
     ps.burst({ x: event.x, y: event.y || 0.55, z: event.z }, {
-      count: event.big ? 18 : (b.id === 'lorenzo' ? 3 : b.id === 'joao' ? 9 : 6),
+      count: event.big ? 14 : 5,
       color: event.color || b.accent,
-      speed: event.big ? 3.1 : (b.id === 'joao' ? 1.8 : 1.25),
-      life: event.big ? 0.4 : (b.id === 'joao' ? 0.24 : 0.16),
-      cube: b.id === 'lorenzo'
+      speed: event.big ? 2.8 : 1.2,
+      life: event.big ? 0.35 : 0.14
     });
     return;
   }
@@ -974,11 +969,7 @@ function spawnAttack(event, ghost = false) {
   }
 
   if (event.kind === 'area') {
-    if (b.id === 'ministro') {
-      effects.push(new PoisonPuddle(scene, event.x, event.z, event.radius, event.damage, event.color || b.accent, incomingEffectOpts(event, ghost)));
-    } else {
-      effects.push(new ImpactArea(scene, event.x, event.z, event.radius, event.damage, event.color || b.accent, incomingEffectOpts(event, ghost)));
-    }
+    effects.push(new ImpactArea(scene, event.x, event.z, event.radius, event.damage, event.color || b.accent, incomingEffectOpts(event, ghost)));
     return;
   }
 
@@ -1014,8 +1005,7 @@ function spawnAttack(event, ghost = false) {
   }
 
   if (event.kind === 'stealth') {
-    effects.push(new SmokeCloud(scene, event.x, event.z, event.color || b.accent, { life: 1.25 }));
-    ps.burst({ x: event.x, y: 0.55, z: event.z }, { count: 30, color: event.color || b.accent, speed: 3.2, life: 0.55 });
+    ps.burst({ x: event.x, y: 0.55, z: event.z }, { count: 22, color: event.color || b.accent, speed: 2.8, life: 0.5 });
   }
 }
 
@@ -1110,14 +1100,14 @@ function launchSuper() {
 
   if (b.id === 'joao') {
     const target = aimTarget(9.4);
-    fireEvent({ kind: 'chain', brawlerId: b.id, x: target.x, z: target.z, radius: 1.75, damage: 25, color: b.accent });
+    fireEvent({ kind: 'chain', brawlerId: b.id, x: target.x, z: target.z, radius: 1.15, damage: 25, color: b.accent });
     player.useSuper();
     shakeTimer = 0.18;
     return;
   }
 
   if (b.id === 'luan') {
-    fireEvent({ kind: 'dash', brawlerId: b.id, x: player.x, z: player.z, angle, radius: 1.15, distance: 4.25, damage: 15, color: b.accent });
+    fireEvent({ kind: 'dash', brawlerId: b.id, x: player.x, z: player.z, angle, radius: 0.95, distance: 3.4, damage: 15, color: b.accent });
     player.useSuper();
     shakeTimer = 0.2;
     return;
@@ -1125,7 +1115,7 @@ function launchSuper() {
 
   if (b.id === 'djonga') {
     const target = aimTarget(5.8);
-    fireEvent({ kind: 'leap', brawlerId: b.id, x: target.x, z: target.z, radius: 1.75, damage: 22, color: b.accent });
+    fireEvent({ kind: 'leap', brawlerId: b.id, x: target.x, z: target.z, radius: 1.35, damage: 22, color: b.accent });
     player.useSuper();
     shakeTimer = 0.24;
     return;
@@ -1154,7 +1144,7 @@ function launchSuper() {
 
   if (b.id === 'ministro') {
     const target = aimTarget(8.8);
-    fireEvent({ kind: 'area', brawlerId: b.id, x: target.x, z: target.z, radius: 1.85, damage: 30, color: b.accent });
+    fireEvent({ kind: 'area', brawlerId: b.id, x: target.x, z: target.z, radius: 1.35, damage: 30, color: b.accent });
     player.useSuper();
     shakeTimer = 0.16;
   }
@@ -1260,7 +1250,7 @@ function removeNameTag(id) {
 }
 
 function positionTag(el, x, z) {
-  const p = new THREE.Vector3(x, 2.65, z);
+  const p = new THREE.Vector3(x, 1.65, z);
   p.project(camera);
   el.style.left = ((p.x * 0.5 + 0.5) * window.innerWidth) + 'px';
   el.style.top = ((-p.y * 0.5 + 0.5) * window.innerHeight) + 'px';
@@ -1318,17 +1308,7 @@ function update(dt) {
     rebuildToxicVisual(false);
   }
 
-  const hpBeforeUpdate = player.hp;
   player.update(dt, input, world);
-  if (player.hp > hpBeforeUpdate + 0.01) {
-    regenBroadcastTimer -= dt;
-    if (regenBroadcastTimer <= 0 || player.hp >= player.hpMax) {
-      regenBroadcastTimer = 0.35;
-      broadcastHealth('regen');
-    }
-  } else {
-    regenBroadcastTimer = Math.min(regenBroadcastTimer, 0.2);
-  }
   if (selectedGameMode === 'battle') applyToxicDamage(dt);
   else handleOpenRespawn(dt);
 

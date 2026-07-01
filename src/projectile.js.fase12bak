@@ -122,7 +122,6 @@ export class Projectile {
     this.targetPlayer = opts.targetPlayer || null;
     this.onHitPlayer = opts.onHitPlayer || null;
     this.hitPlayer = false;
-    this.trailTimer = 0;
 
     this.mesh = makeProjectileMesh(this.brawlerId, this.color, this.size, this.glowSize);
     this.mesh.position.set(x, y, z);
@@ -137,18 +136,6 @@ export class Projectile {
   }
 
   update(dt, world, ps, player) {
-    this.trailTimer -= dt;
-    if (this.trailTimer <= 0 && ps) {
-      this.trailTimer = this.brawlerId === 'gui' ? 0.035 : this.brawlerId === 'joao' ? 0.045 : 0.055;
-      const trailColor = this.brawlerId === 'ministro' ? 0x39d98a : this.brawlerId === 'thomas' ? 0x9feaff : this.brawlerId === 'lorenzo' ? 0x00d7c7 : this.color;
-      ps.burst({ x: this.x, y: this.y, z: this.z }, {
-        color: trailColor,
-        count: this.big ? 3 : 2,
-        speed: this.big ? 0.9 : 0.55,
-        life: this.big ? 0.28 : 0.18,
-        cube: this.brawlerId === 'lorenzo'
-      });
-    }
     for (let s = 0; s < 2; s++) {
       const dx = this.vx * dt * 0.5;
       const dz = this.vz * dt * 0.5;
@@ -180,10 +167,7 @@ export class Projectile {
           if (o.alive === false) continue;
           if (pointInRectXZ(this.x, this.z, o.bounds)) {
             const res = o.hit({ x: this.x, y: this.y, z: this.z }, ps, this.currentDamage());
-            if (res && player) {
-              player.gainSuper(this.superGain || res.superGain);
-              if (player.markCombat) player.markCombat();
-            }
+            if (res && player) player.gainSuper(this.superGain || res.superGain);
             if (!this.pierce) {
               this.kill(world.scene);
               return;

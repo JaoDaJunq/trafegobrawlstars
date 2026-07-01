@@ -37,10 +37,6 @@ export class Player {
     this.spinTimer = 0;
     this.rootedTimer = 0;
     this.invulnTimer = 0;
-    this.outOfCombatTimer = 0;
-    this.regenDelay = 4.2;
-    this.regenPerSecond = Math.max(10, Math.round(this.hpMax * 0.075));
-    this.regenFlash = 0;
     this.isDown = false;
     this.respawnTimer = 0;
 
@@ -110,13 +106,6 @@ export class Player {
 
     this.inBush = world.bushes.some(b => world.circleOverlapsBush(this.x, this.z, this.radius * 0.6, b));
 
-    this.outOfCombatTimer += dt;
-    if (this.hp > 0 && this.hp < this.hpMax && this.outOfCombatTimer >= this.regenDelay) {
-      this.hp = Math.min(this.hpMax, this.hp + this.regenPerSecond * dt);
-      this.regenFlash = 0.18;
-    }
-    if (this.regenFlash > 0) this.regenFlash -= dt;
-
     this._syncMesh();
   }
 
@@ -127,8 +116,7 @@ export class Player {
     this.gunPivot.rotation.y = this.aimAngle;
     const hiddenOpacity = this.isDown ? 0.28 : (this.stealthTimer > 0 ? 0.22 : (this.inBush ? 0.45 : 1));
     setMeshOpacity(this.root, this.shadowMesh, hiddenOpacity);
-    const regenPulse = this.regenFlash > 0 ? Math.sin(this.regenFlash * 50) * 0.025 : 0;
-    this.root.scale.setScalar(this.isDown ? 0.82 : (this.invulnTimer > 0 ? 1 + Math.sin(this.invulnTimer * 24) * 0.035 : 1 + regenPulse));
+    this.root.scale.setScalar(this.isDown ? 0.82 : (this.invulnTimer > 0 ? 1 + Math.sin(this.invulnTimer * 24) * 0.035 : 1));
   }
 
   tryMove(nx, nz, world) {
@@ -152,13 +140,7 @@ export class Player {
     return !this.isDown && this.rootedTimer <= 0.05 && this.ammo > 0 && this.fireCooldown <= 0;
   }
 
-  markCombat() {
-    this.outOfCombatTimer = 0;
-    this.regenFlash = 0;
-  }
-
   fire() {
-    this.markCombat();
     this.ammo--;
     this.fireCooldown = this.fireRate;
     this.muzzleFlash = 0.08;
@@ -176,7 +158,6 @@ export class Player {
   }
 
   useSuper() {
-    this.markCombat();
     this.superCharge = 0;
   }
 
@@ -188,17 +169,16 @@ export class Player {
     this.spinTimer = seconds;
   }
 
-  applyRoot(seconds = 1.1) {
+  root(seconds = 1.1) {
     if (this.isDown) return;
     this.rootedTimer = Math.max(this.rootedTimer, seconds);
   }
 
   takeDamage(amount, opts = {}) {
     if (this.isDown || this.invulnTimer > 0 || amount <= 0) return { changed: false, downed: false };
-    this.markCombat();
     this.hp = Math.max(0, this.hp - amount);
     const downed = this.hp <= 0;
-    if (opts.root) this.applyRoot(opts.root);
+    if (opts.root) this.root(opts.root);
     if (downed) {
       this.isDown = true;
       this.respawnTimer = 0;

@@ -10,6 +10,7 @@ import { Room, randomPin } from './network.js';
 import { BRAWLERS, DEFAULT_BRAWLER_ID, getBrawler } from './brawlers.js';
 import { ConeSlash, ImpactArea, ChainTrap, DashAttack, LeapAttack, HealTurret, SmokeCloud, PoisonPuddle } from './attackEffects.js';
 import { clamp } from './utils.js';
+import { HIT_TYPES, createCombatCounters, recordCounter, superGainCapForBrawler } from './combatTypes.js';
 
 const canvasHolder = document.getElementById('canvas-holder');
 const hudAmmoPips = document.querySelectorAll('#hud-ammo .pip');
@@ -22,6 +23,7 @@ const hudAlive = document.getElementById('hud-alive');
 const hudTimer = document.getElementById('hud-timer');
 const hudToxic = document.getElementById('hud-toxic');
 const hudKills = document.getElementById('hud-kills');
+const hudCombat = document.getElementById('hud-combat');
 const hudMode = document.getElementById('hud-mode');
 const hudHealthFill = document.getElementById('hud-health-fill');
 const hudHealthText = document.getElementById('hud-health-text');
@@ -32,6 +34,7 @@ const createBtn = document.getElementById('create-btn');
 const joinBtn = document.getElementById('join-btn');
 const roomStatus = document.getElementById('room-status');
 const nameTagsContainer = document.getElementById('name-tags');
+const combatTextsContainer = document.getElementById('combat-texts');
 const brawlerGrid = document.getElementById('brawler-grid');
 const brawlerSummary = document.getElementById('brawler-summary');
 const modeBattleBtn = document.getElementById('mode-battle-btn');
@@ -183,6 +186,8 @@ let matchStartAt = 0;
 let countdownTimer = 0;
 let openRespawnTimer = 0;
 const playerStats = new Map();
+const combatCounters = createCombatCounters();
+let actionSeq = 0;
 let player = null;
 let projectiles = [];
 let effects = [];
@@ -212,6 +217,61 @@ function setStatus(msg, kind) {
 
 function hexColor(value) {
   return '#' + value.toString(16).padStart(6, '0');
+}
+
+function nextActionId(prefix = 'a') {
+  actionSeq += 1;
+  return `${room.myId || 'local'}-${prefix}-${Date.now().toString(36)}-${actionSeq}`;
+}
+
+function updateCombatHud() {
+  if (!hudCombat) return;
+  hudCombat.textContent = `DMG ${combatCounters.damageDealt} · TOMOU ${combatCounters.damageTaken} · CURA ${combatCounters.healingDone}`;
+}
+
+const floatingTexts = [];
+function spawnFloatingText(label, x, z, kind = 'damage') {
+  if (!combatTextsContainer || x === undefined || z === undefined) return;
+  const el = document.createElement('div');
+  el.className = `combat-text is-${kind}`;
+  el.textContent = label;
+  combatTextsContainer.appendChild(el);
+  floatingTexts.push({ el, x, z, y: 1.65, life: 0.92, maxLife: 0.92, drift: (Math.random() - 0.5) * 0.25 });
+}
+
+function updateFloatingTexts(dt) {
+  for (const ft of floatingTexts) {
+    ft.life -= dt;
+    ft.y += dt * 0.95;
+    const p = new THREE.Vector3(ft.x + ft.drift * (1 - ft.life / ft.maxLife), ft.y, ft.z);
+    p.project(camera);
+    ft.el.style.left = ((p.x * 0.5 + 0.5) * window.innerWidth) + 'px';
+    ft.el.style.top = ((-p.y * 0.5 + 0.5) * window.innerHeight) + 'px';
+    ft.el.style.opacity = Math.max(0, ft.life / ft.maxLife).toFixed(3);
+    ft.el.style.transform = `translate(-50%, -50%) scale(${1 + (1 - ft.life / ft.maxLife) * 0.18})`;
+  }
+  for (const ft of floatingTexts.filter(t => t.life <= 0)) ft.el.remove();
+  for (let i = floatingTexts.length - 1; i >= 0; i--) if (floatingTexts[i].life <= 0) floatingTexts.splice(i, 1);
+}
+
+function recordDamageTaken(amount, point, event = {}) {
+  recordCounter(combatCounters, 'taken', amount, event.hitType || HIT_TYPES.PROJECTILE, { super: event.actionKind === 'super', basic: event.actionKind !== 'super' });
+  spawnFloatingText(`-${Math.round(amount || 0)}`, point?.x ?? player?.x, point?.z ?? player?.z, event.hitType === HIT_TYPES.POISON ? 'poison' : 'damage');
+  updateCombatHud();
+}
+
+function recordDamageDealt(amount, point, event = {}) {
+  recordCounter(combatCounters, 'dealt', amount, event.hitType || HIT_TYPES.PROJECTILE, { super: event.actionKind === 'super', basic: event.actionKind !== 'super' });
+  spawnFloatingText(`-${Math.round(amount || 0)}`, point?.x, point?.z, event.hitType === HIT_TYPES.POISON ? 'poison' : 'damage');
+  updateCombatHud();
+}
+
+function recordHealing(amount, point, kind = 'heal') {
+  if (!amount || amount <= 0) return;
+  recordCounter(combatCounters, 'healingDone', amount, HIT_TYPES.HEAL);
+  recordCounter(combatCounters, 'healingReceived', amount, HIT_TYPES.HEAL);
+  spawnFloatingText(`+${Math.round(amount)}`, point?.x ?? player?.x, point?.z ?? player?.z, kind);
+  updateCombatHud();
 }
 
 function renderBrawlerCards() {
@@ -434,13 +494,13 @@ function showAttackPreview(mode = 'basic') {
   if (mode === 'super') {
     if (b.id === 'joao') {
       const t = aimTarget(9.4);
-      addCirclePreview(t.x, t.z, 1.15, color, 0.3);
+      addCirclePreview(t.x, t.z, 1.95, color, 0.24);
     } else if (b.id === 'luan') {
-      addLinePreview(x, z, angle, 3.4, 1.9, color);
-      addCirclePreview(x + Math.sin(angle) * 3.4, z + Math.cos(angle) * 3.4, 0.95, color, 0.18);
+      addLinePreview(x, z, angle, 4.3, 2.05, color);
+      addCirclePreview(x + Math.sin(angle) * 4.3, z + Math.cos(angle) * 4.3, 1.05, color, 0.18);
     } else if (b.id === 'djonga') {
       const t = aimTarget(5.8);
-      addCirclePreview(t.x, t.z, 1.35, color, 0.28);
+      addCirclePreview(t.x, t.z, 1.9, color, 0.24);
     } else if (b.id === 'thomas') {
       addCirclePreview(x, z, 2.2, color, 0.2);
     } else if (b.id === 'gui') {
@@ -451,22 +511,22 @@ function showAttackPreview(mode = 'basic') {
       addCirclePreview(t.x, t.z, 3.2, color, 0.1);
     } else if (b.id === 'ministro') {
       const t = aimTarget(8.8);
-      addCirclePreview(t.x, t.z, 1.35, color, 0.28);
+      addCirclePreview(t.x, t.z, 1.9, color, 0.24);
     }
     return;
   }
 
-  if (b.id === 'joao') addLinePreview(x, z, angle, 8.2, 0.55, color);
-  else if (b.id === 'luan') addConePreview(x, z, angle, 1.85, 1.25, color);
-  else if (b.id === 'djonga') addConePreview(x, z, angle, 1.35, 0.95, color);
-  else if (b.id === 'thomas') addConePreview(x, z, angle, 8.5, 0.58, color);
+  if (b.id === 'joao') addLinePreview(x, z, angle, 8.4, 0.55, color);
+  else if (b.id === 'luan') addConePreview(x, z, angle, 2.75, 1.38, color);
+  else if (b.id === 'djonga') addConePreview(x, z, angle, 2.35, 1.12, color);
+  else if (b.id === 'thomas') addConePreview(x, z, angle, 8.7, 0.58, color);
   else if (b.id === 'gui') {
-    addLinePreview(x, z, angle, 6.4, 0.75, color);
-    const splitX = x + Math.sin(angle) * 6.4;
-    const splitZ = z + Math.cos(angle) * 6.4;
+    addLinePreview(x, z, angle, 6.5, 0.75, color);
+    const splitX = x + Math.sin(angle) * 6.5;
+    const splitZ = z + Math.cos(angle) * 6.5;
     addConePreview(splitX, splitZ, angle, 4.8, 0.92, color);
-  } else if (b.id === 'lorenzo') addConePreview(x, z, angle, 7.8, 1.25, color);
-  else if (b.id === 'ministro') addLinePreview(x, z, angle, 12.5, 0.5, color);
+  } else if (b.id === 'lorenzo') addConePreview(x, z, angle, 7.9, 1.32, color);
+  else if (b.id === 'ministro') addLinePreview(x, z, angle, 12.8, 0.5, color);
 }
 
 
@@ -559,6 +619,9 @@ function registerKill(killerId, victimId) {
   const victimName = victimId === room.myId ? room.myName : (remotePlayers.get(victimId)?.name || 'Jogador');
   ensureStats(killerId, killerName).kills++;
   ensureStats(victimId, victimName).deaths++;
+  if (killerId === room.myId) combatCounters.kills += 1;
+  if (victimId === room.myId) combatCounters.deaths += 1;
+  updateCombatHud();
 }
 
 function aliveCount() {
@@ -593,6 +656,7 @@ function applyToxicDamage(dt) {
     const t = Math.max(0, Math.min(1, matchElapsed / MATCH_DURATION));
     const damage = Math.round(7 + t * 11);
     const result = player.takeDamage(damage);
+    if (result.changed) recordDamageTaken(damage, { x: player.x, z: player.z }, { hitType: HIT_TYPES.ENVIRONMENT, actionKind: 'environment' });
     ps.burst({ x: player.x, y: 0.55, z: player.z }, { count: result.downed ? 26 : 10, color: COLORS.toxic, speed: 2.8, life: 0.5, cube: result.downed });
     shakeTimer = Math.max(shakeTimer, result.downed ? 0.25 : 0.08);
     broadcastHealth(result.downed ? 'toxic-down' : 'toxic');
@@ -659,6 +723,7 @@ function applyIncomingDamage(amount, point, event = {}) {
   const rootTime = event.kind === 'chain' ? 1.35 : 0;
   const result = player.takeDamage(amount || 0, { root: rootTime });
   if (!result.changed) return;
+  recordDamageTaken(amount || 0, point, event);
 
   ps.burst({ x: point.x, y: point.y || 0.55, z: point.z }, {
     count: result.downed ? 28 : 12,
@@ -668,9 +733,25 @@ function applyIncomingDamage(amount, point, event = {}) {
     cube: result.downed
   });
   shakeTimer = Math.max(shakeTimer, result.downed ? 0.26 : 0.1);
+  const attackerId = event.id || event.attackerId;
+  const gainAmount = event.superGainOnPlayer ?? event.superGain ?? Math.max(3, Math.round((amount || 0) * 0.7));
+  if (attackerId) {
+    room.sendCombat({
+      type: 'super_gain',
+      targetId: attackerId,
+      amount: gainAmount,
+      actionId: event.actionId,
+      superGainCap: event.superGainCap,
+      actionKind: event.actionKind || 'basic',
+      hitType: event.hitType || HIT_TYPES.PROJECTILE,
+      damage: amount || 0,
+      hitX: point?.x,
+      hitZ: point?.z
+    });
+  }
   broadcastHealth(result.downed ? 'downed' : 'damage');
   if (result.downed) {
-    const killerId = event.id || event.attackerId;
+    const killerId = attackerId;
     if (killerId) {
       registerKill(killerId, room.myId);
       room.sendCombat({ type: 'kill', killerId, victimId: room.myId });
@@ -843,6 +924,14 @@ room.onCombatEvent = payload => {
   if (payload.type === 'health') {
     const rp = remotePlayers.get(payload.targetId || payload.id);
     if (rp) rp.applyHealth(payload.hp, payload.down);
+  } else if (payload.type === 'super_gain') {
+    if (payload.targetId === room.myId && player && !player.isDown) {
+      const gained = player.gainSuper(payload.amount || 0, payload.actionId, payload.superGainCap ?? Infinity);
+      if (payload.damage) recordDamageDealt(payload.damage, { x: payload.hitX, z: payload.hitZ }, payload);
+      if (gained > 0 && payload.hitX !== undefined && payload.hitZ !== undefined) {
+        spawnFloatingText(`+${Math.round(gained)} SUPER`, payload.hitX, payload.hitZ, 'heal');
+      }
+    }
   } else if (payload.type === 'kill') {
     registerKill(payload.killerId, payload.victimId);
   } else if (payload.type === 'brawler_change') {
@@ -870,6 +959,11 @@ function addProjectile(data, ghost = false) {
       glowSize: data.glowSize,
       pierce: data.pierce,
       superGain: data.superGain,
+      superGainOnPlayer: data.superGainOnPlayer,
+      superGainCap: data.superGainCap,
+      actionId: data.actionId,
+      actionKind: data.actionKind,
+      hitType: data.hitType,
       damageNear: data.damageNear,
       damageFar: data.damageFar,
       targetPlayer: ghost ? player : null,
@@ -890,7 +984,12 @@ function addProjectile(data, ghost = false) {
             damage: data.splitDamage || 4,
             size: data.splitSize || 0.06,
             glowSize: data.splitGlowSize || 0.14,
-            superGain: data.splitSuperGain || 4
+            superGain: data.splitSuperGain || 4,
+            superGainOnPlayer: data.splitSuperGainOnPlayer || data.splitSuperGain || 3,
+            superGainCap: data.superGainCap,
+            actionId: data.actionId,
+            actionKind: data.actionKind || 'basic',
+            hitType: data.hitType || HIT_TYPES.PROJECTILE
           });
         }
       }) : null
@@ -918,6 +1017,11 @@ function projectileAtTip(angle, brawler, params = {}) {
     big: !!params.big,
     pierce: !!params.pierce,
     superGain: params.superGain,
+    superGainOnPlayer: params.superGainOnPlayer ?? params.superGain,
+    superGainCap: params.superGainCap ?? superGainCapForBrawler(brawler.id, params.actionKind || 'basic'),
+    actionId: params.actionId || nextActionId(brawler.id),
+    actionKind: params.actionKind || 'basic',
+    hitType: params.hitType || HIT_TYPES.PROJECTILE,
     pull: !!params.pull,
     pullToX: params.pullToX,
     pullToZ: params.pullToZ,
@@ -930,6 +1034,7 @@ function projectileAtTip(angle, brawler, params = {}) {
     splitSize: params.splitSize,
     splitGlowSize: params.splitGlowSize,
     splitSuperGain: params.splitSuperGain,
+    splitSuperGainOnPlayer: params.splitSuperGainOnPlayer,
     delay: params.delay || 0
   };
 }
@@ -958,18 +1063,19 @@ function spawnAttack(event, ghost = false) {
 
   if (event.kind === 'projectile') {
     addProjectile(event, ghost);
+    const isPhysicalShot = b.id === 'thomas' || b.id === 'lorenzo';
     ps.burst({ x: event.x, y: event.y || 0.55, z: event.z }, {
-      count: event.big ? 18 : (b.id === 'lorenzo' ? 3 : b.id === 'joao' ? 9 : 6),
-      color: event.color || b.accent,
-      speed: event.big ? 3.1 : (b.id === 'joao' ? 1.8 : 1.25),
-      life: event.big ? 0.4 : (b.id === 'joao' ? 0.24 : 0.16),
+      count: event.big ? 14 : isPhysicalShot ? 1 : (b.id === 'joao' ? 7 : 4),
+      color: isPhysicalShot ? 0xd8e4e7 : (event.color || b.accent),
+      speed: event.big ? 2.5 : isPhysicalShot ? 0.45 : (b.id === 'joao' ? 1.4 : 0.95),
+      life: event.big ? 0.34 : isPhysicalShot ? 0.08 : (b.id === 'joao' ? 0.2 : 0.13),
       cube: b.id === 'lorenzo'
     });
     return;
   }
 
   if (event.kind === 'cone') {
-    effects.push(new ConeSlash(scene, event.x, event.z, event.angle, event.range, event.arc, event.damage, event.color || b.accent, incomingEffectOpts(event, ghost)));
+    effects.push(new ConeSlash(scene, event.x, event.z, event.angle, event.range, event.arc, event.damage, event.color || b.accent, { ...incomingEffectOpts(event, ghost), style: b.id, superGain: event.superGain }));
     return;
   }
 
@@ -988,7 +1094,7 @@ function spawnAttack(event, ghost = false) {
   }
 
   if (event.kind === 'dash' && player && !ghost) {
-    effects.push(new DashAttack(scene, player, event.angle, event.color || b.accent, { damage: event.damage, distance: event.distance, radius: event.radius }));
+    effects.push(new DashAttack(scene, player, event.angle, event.color || b.accent, { damage: event.damage, distance: event.distance, radius: event.radius, duration: event.duration }));
     return;
   }
 
@@ -1021,140 +1127,181 @@ function spawnAttack(event, ghost = false) {
 
 function launchBasic() {
   const b = player.brawler;
-  const angle = player.aimAngle;
-  const origin = { x: player.x, z: player.z };
+  const baseAngle = player.aimAngle;
+  const actionId = nextActionId(`${b.id}-basic`);
+  const cap = superGainCapForBrawler(b.id, 'basic');
 
   if (b.id === 'joao') {
-    fireEvent(projectileAtTip(angle, b, { range: 8.2, damage: 25, speed: 13.2, color: 0x48b6ff, size: 0.12, glowSize: 0.28 }));
+    fireEvent(projectileAtTip(baseAngle, b, {
+      actionId, actionKind: 'basic', hitType: HIT_TYPES.PROJECTILE,
+      range: 8.4, damage: 25, speed: 13.2, color: 0x48b6ff,
+      size: 0.12, glowSize: 0.28,
+      superGain: b.superGainBasic, superGainOnPlayer: b.superGainBasic, superGainCap: cap
+    }));
     return;
   }
 
   if (b.id === 'luan') {
-    fireEvent({ kind: 'cone', brawlerId: b.id, x: origin.x, z: origin.z, angle, range: 1.85, arc: 1.25, damage: 15, color: b.accent });
+    const origin = { x: player.x, z: player.z };
+    fireEvent({
+      kind: 'cone', brawlerId: b.id, x: origin.x, z: origin.z, angle: player.aimAngle,
+      range: 2.75, arc: 1.38, damage: 16, color: b.accent,
+      actionId, actionKind: 'basic', hitType: HIT_TYPES.MELEE,
+      superGain: b.superGainBasic, superGainOnPlayer: b.superGainBasic, superGainCap: cap
+    });
     return;
   }
 
   if (b.id === 'djonga') {
+    // Cada soco recalcula posição/mira local para o combo não bater no vazio se o jogador andar.
     for (let i = 0; i < 3; i++) {
-      fireEvent({ kind: 'cone', brawlerId: b.id, x: origin.x, z: origin.z, angle, range: 1.35, arc: 0.95, damage: 8, color: b.accent, delay: i * 0.09 });
+      window.setTimeout(() => {
+        if (!player || player.isDown) return;
+        fireEvent({
+          kind: 'cone', brawlerId: b.id, x: player.x, z: player.z, angle: player.aimAngle,
+          range: 2.35, arc: 1.12, damage: 8, color: i === 1 ? 0x2764c8 : b.accent,
+          comboIndex: i,
+          actionId, actionKind: 'basic', hitType: HIT_TYPES.MELEE,
+          superGain: b.superGainBasic, superGainOnPlayer: b.superGainBasic, superGainCap: cap
+        });
+      }, i * 115);
     }
     return;
   }
 
   if (b.id === 'thomas') {
-    // Leon-like: four blades in a narrow spread, stronger up close and weaker at max range.
-    const offsets = [-0.26, -0.08, 0.08, 0.26];
+    // Lâminas físicas, sem rastro mágico exagerado.
+    const offsets = [-0.27, -0.09, 0.09, 0.27];
     offsets.forEach((off, i) => {
-      fireEvent(projectileAtTip(angle + off, b, {
-        range: 8.5,
-        damage: 6,
-        damageNear: 9,
-        damageFar: 3,
-        speed: 14.5,
-        color: b.accent,
-        size: 0.075,
-        glowSize: 0.16,
-        delay: i * 0.025
+      fireEvent(projectileAtTip(baseAngle + off, b, {
+        actionId, actionKind: 'basic', hitType: HIT_TYPES.PROJECTILE,
+        range: 8.7, damage: 6, damageNear: 9, damageFar: 3,
+        speed: 14.7, color: 0xd7edf5, size: 0.074, glowSize: 0.08,
+        delay: i * 0.022,
+        superGain: b.superGainBasic, superGainOnPlayer: b.superGainBasic, superGainCap: cap
       }));
     });
     return;
   }
 
   if (b.id === 'gui') {
-    // Gene-like: one main orb; if it reaches max range without impact, it splits into 6 shards.
-    fireEvent(projectileAtTip(angle, b, {
-      range: 6.4,
-      damage: 18,
-      speed: 11.8,
-      color: b.accent,
-      size: 0.16,
-      glowSize: 0.34,
-      big: true,
-      split: true,
-      splitDamage: 4,
-      splitRange: 4.8,
-      splitSpeed: 12.2,
-      splitColor: 0xff8de8,
-      splitSize: 0.065,
-      splitGlowSize: 0.14,
-      splitSuperGain: 4
+    fireEvent(projectileAtTip(baseAngle, b, {
+      actionId, actionKind: 'basic', hitType: HIT_TYPES.PROJECTILE,
+      range: 6.5, damage: 18, speed: 11.8, color: b.accent,
+      size: 0.16, glowSize: 0.34, big: true,
+      split: true, splitDamage: 4, splitRange: 4.8, splitSpeed: 12.2,
+      splitColor: 0xff8de8, splitSize: 0.065, splitGlowSize: 0.14,
+      splitSuperGain: 3, splitSuperGainOnPlayer: 3,
+      superGain: b.superGainBasic, superGainOnPlayer: b.superGainBasic, superGainCap: cap
     }));
     return;
   }
 
   if (b.id === 'lorenzo') {
-    // Pam-like: 9 scraps in a wide volley, sweeping left-to-right in two quick bursts.
-    const volley = [-0.58, -0.38, -0.18, 0.02, 0.22, 0.42, 0.58, -0.48, 0.48];
+    // Rajada tipo sucata: física, larga e com pellets sem brilho mágico.
+    const volley = [-0.62, -0.44, -0.27, -0.09, 0.09, 0.27, 0.44, 0.62, 0];
     volley.forEach((off, i) => {
-      fireEvent(projectileAtTip(angle + off, b, {
-        range: 7.8,
-        damage: 6,
-        speed: 13.2,
-        color: b.accent,
-        size: 0.072,
-        glowSize: 0.15,
-        delay: i * 0.025
+      fireEvent(projectileAtTip(baseAngle + off, b, {
+        actionId, actionKind: 'basic', hitType: HIT_TYPES.PROJECTILE,
+        range: 7.9, damage: 6, speed: 13.1, color: 0xbfc6c7,
+        size: 0.072, glowSize: 0.05, delay: i * 0.022,
+        superGain: b.superGainBasic, superGainOnPlayer: b.superGainBasic, superGainCap: cap
       }));
     });
     return;
   }
 
   if (b.id === 'ministro') {
-    fireEvent(projectileAtTip(angle, b, { range: 12.5, damage: 30, speed: 13.2, color: b.accent, size: 0.095, glowSize: 0.2, pierce: true, superGain: 18 }));
+    fireEvent(projectileAtTip(baseAngle, b, {
+      actionId, actionKind: 'basic', hitType: HIT_TYPES.PROJECTILE,
+      range: 12.8, damage: 30, speed: 13.4, color: b.accent,
+      size: 0.095, glowSize: 0.2, pierce: true,
+      superGain: b.superGainBasic, superGainOnPlayer: b.superGainBasic, superGainCap: cap
+    }));
   }
 }
 
 function launchSuper() {
   const b = player.brawler;
   const angle = player.aimAngle;
+  const actionId = nextActionId(`${b.id}-super`);
+  const common = { actionId, actionKind: 'super', superGainCap: superGainCapForBrawler(b.id, 'super') };
 
   if (b.id === 'joao') {
-    const target = aimTarget(9.4);
-    fireEvent({ kind: 'chain', brawlerId: b.id, x: target.x, z: target.z, radius: 1.75, damage: 25, color: b.accent });
+    const target = aimTarget(9.6);
+    fireEvent({
+      kind: 'chain', brawlerId: b.id, x: target.x, z: target.z,
+      radius: 1.95, damage: 25, color: b.accent,
+      hitType: HIT_TYPES.CONTROL, ...common
+    });
     player.useSuper();
     shakeTimer = 0.18;
     return;
   }
 
   if (b.id === 'luan') {
-    fireEvent({ kind: 'dash', brawlerId: b.id, x: player.x, z: player.z, angle, radius: 1.15, distance: 4.25, damage: 15, color: b.accent });
+    fireEvent({
+      kind: 'dash', brawlerId: b.id, x: player.x, z: player.z, angle,
+      radius: 1.18, distance: 4.3, duration: 0.46, damage: 16, color: b.accent,
+      hitType: HIT_TYPES.MELEE, ...common
+    });
     player.useSuper();
     shakeTimer = 0.2;
     return;
   }
 
   if (b.id === 'djonga') {
-    const target = aimTarget(5.8);
-    fireEvent({ kind: 'leap', brawlerId: b.id, x: target.x, z: target.z, radius: 1.75, damage: 22, color: b.accent });
+    const target = aimTarget(6.0);
+    fireEvent({
+      kind: 'leap', brawlerId: b.id, x: target.x, z: target.z,
+      radius: 1.9, damage: 22, color: b.accent,
+      hitType: HIT_TYPES.AREA, ...common
+    });
     player.useSuper();
     shakeTimer = 0.24;
     return;
   }
 
   if (b.id === 'thomas') {
-    player.startStealth(4.2);
-    fireEvent({ kind: 'stealth', brawlerId: b.id, x: player.x, z: player.z, color: b.accent });
+    player.startStealth(4.4);
+    fireEvent({
+      kind: 'stealth', brawlerId: b.id, x: player.x, z: player.z,
+      color: b.accent, hitType: HIT_TYPES.CONTROL, ...common
+    });
     player.useSuper();
     return;
   }
 
   if (b.id === 'gui') {
-    fireEvent(projectileAtTip(angle, b, { range: 11.5, damage: 8, speed: 15, color: b.accent, size: 0.22, glowSize: 0.45, big: true, pierce: true, pull: true, pullToX: player.x, pullToZ: player.z, pullDistance: 3.1 }));
+    fireEvent(projectileAtTip(angle, b, {
+      actionId, actionKind: 'super', hitType: HIT_TYPES.CONTROL,
+      range: 11.8, damage: 8, speed: 15, color: b.accent,
+      size: 0.22, glowSize: 0.45, big: true, pierce: true,
+      pull: true, pullToX: player.x, pullToZ: player.z, pullDistance: 3.2,
+      superGain: 0, superGainOnPlayer: 0, superGainCap: 0
+    }));
     player.useSuper();
     shakeTimer = 0.12;
     return;
   }
 
   if (b.id === 'lorenzo') {
-    const target = aimTarget(5.4);
-    fireEvent({ kind: 'turret', brawlerId: b.id, x: target.x, z: target.z, color: b.accent });
+    const target = aimTarget(5.6);
+    fireEvent({
+      kind: 'turret', brawlerId: b.id, x: target.x, z: target.z,
+      color: b.accent, hitType: HIT_TYPES.HEAL, ...common
+    });
     player.useSuper();
     return;
   }
 
   if (b.id === 'ministro') {
-    const target = aimTarget(8.8);
-    fireEvent({ kind: 'area', brawlerId: b.id, x: target.x, z: target.z, radius: 1.85, damage: 30, color: b.accent });
+    const target = aimTarget(9.0);
+    fireEvent({
+      kind: 'area', brawlerId: b.id, x: target.x, z: target.z,
+      radius: 2.0, damage: 30, color: b.accent,
+      hitType: HIT_TYPES.POISON, ...common
+    });
     player.useSuper();
     shakeTimer = 0.16;
   }
@@ -1321,6 +1468,8 @@ function update(dt) {
   const hpBeforeUpdate = player.hp;
   player.update(dt, input, world);
   if (player.hp > hpBeforeUpdate + 0.01) {
+    const healed = player.hp - hpBeforeUpdate;
+    recordHealing(healed, { x: player.x, z: player.z }, 'heal');
     regenBroadcastTimer -= dt;
     if (regenBroadcastTimer <= 0 || player.hp >= player.hpMax) {
       regenBroadcastTimer = 0.35;
@@ -1350,8 +1499,18 @@ function update(dt) {
   for (const p of projectiles) p.update(dt, world, ps, player);
   projectiles = projectiles.filter(p => !p.dead);
 
+  const hpBeforeEffects = player.hp;
   for (const fx of effects) fx.update(dt, world, ps, player);
   effects = effects.filter(fx => !fx.dead);
+  if (player.hp > hpBeforeEffects + 0.01) {
+    const healed = player.hp - hpBeforeEffects;
+    recordHealing(healed, { x: player.x, z: player.z }, 'heal');
+    regenBroadcastTimer -= dt;
+    if (regenBroadcastTimer <= 0 || player.hp >= player.hpMax) {
+      regenBroadcastTimer = 0.35;
+      broadcastHealth('heal-effect');
+    }
+  }
 
   world.update(dt);
   ps.update(dt);
@@ -1383,8 +1542,10 @@ function update(dt) {
   if (hudTimer) hudTimer.textContent = selectedGameMode === 'battle' ? formatTime(MATCH_DURATION - matchElapsed) : 'ABERTO';
   if (hudToxic) hudToxic.textContent = selectedGameMode === 'battle' ? `NÉVOA ${Math.max(0, Math.round((safeRadius() / TOXIC_START_RADIUS) * 100))}%` : `LÍDER ${leaderId() ? (playerStats.get(leaderId())?.kills || 0) : 0}`;
   if (hudKills) hudKills.textContent = `KILLS ${getKills(room.myId)}`;
+  updateCombatHud();
   if (hudMode) hudMode.textContent = selectedGameMode === 'battle' ? 'BR' : 'ABERTO';
 
+  updateFloatingTexts(dt);
   updateNameTags();
 }
 

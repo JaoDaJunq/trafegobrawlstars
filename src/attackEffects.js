@@ -105,7 +105,7 @@ function applyConeDamage(world, ps, player, x, z, angle, range, arc, damage, gai
   return hit;
 }
 
-function buildConeMesh(range, arc, color) {
+function buildConeMesh(range, arc, color, style = 'default') {
   const shape = new THREE.Shape();
   shape.moveTo(0, 0);
   const steps = 28;
@@ -115,7 +115,8 @@ function buildConeMesh(range, arc, color) {
   }
   shape.lineTo(0, 0);
   const group = new THREE.Group();
-  const fill = new THREE.Mesh(new THREE.ShapeGeometry(shape), mat(color, 0.2));
+  const fillOpacity = style === 'luan' ? 0.08 : style === 'djonga' ? 0.06 : 0.2;
+  const fill = new THREE.Mesh(new THREE.ShapeGeometry(shape), mat(color, fillOpacity));
   fill.rotation.x = -Math.PI / 2;
   fill.position.y = 0.035;
   group.add(fill);
@@ -123,22 +124,48 @@ function buildConeMesh(range, arc, color) {
   const outer = new THREE.Group();
   const left = -arc / 2;
   const right = arc / 2;
-  addLine(outer, [new THREE.Vector3(0, 0.08, 0), new THREE.Vector3(Math.sin(left) * range, 0.08, Math.cos(left) * range)], color, 0.88);
-  addLine(outer, [new THREE.Vector3(0, 0.08, 0), new THREE.Vector3(Math.sin(right) * range, 0.08, Math.cos(right) * range)], color, 0.88);
+  const edgeOpacity = style === 'djonga' ? 0.35 : 0.78;
+  addLine(outer, [new THREE.Vector3(0, 0.08, 0), new THREE.Vector3(Math.sin(left) * range, 0.08, Math.cos(left) * range)], color, edgeOpacity);
+  addLine(outer, [new THREE.Vector3(0, 0.08, 0), new THREE.Vector3(Math.sin(right) * range, 0.08, Math.cos(right) * range)], color, edgeOpacity);
   const arcPts = [];
   for (let i = 0; i <= 24; i++) {
     const a = left + (right - left) * i / 24;
     arcPts.push(new THREE.Vector3(Math.sin(a) * range, 0.08, Math.cos(a) * range));
   }
-  addLine(outer, arcPts, color, 0.92);
+  addLine(outer, arcPts, color, style === 'djonga' ? 0.42 : 0.8);
   group.add(outer);
 
-  const slashGeo = new THREE.TorusGeometry(range * 0.43, 0.025, 6, 48, arc * 0.72);
-  const slash = new THREE.Mesh(slashGeo, mat(0xffffff, 0.55));
-  slash.rotation.x = -Math.PI / 2;
-  slash.rotation.z = -arc * 0.36;
-  slash.position.set(0, 0.1, range * 0.33);
-  group.add(slash);
+  if (style === 'luan') {
+    const slashGeo = new THREE.TorusGeometry(range * 0.47, 0.035, 6, 56, arc * 0.75);
+    const slash = new THREE.Mesh(slashGeo, mat(0xfff0f0, 0.72));
+    slash.rotation.x = -Math.PI / 2;
+    slash.rotation.z = -arc * 0.37;
+    slash.position.set(0, 0.105, range * 0.34);
+    group.add(slash);
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.03, range * 0.88), mat(color, 0.68));
+    blade.position.set(Math.sin(arc * 0.22) * range * 0.34, 0.12, Math.cos(arc * 0.22) * range * 0.42);
+    blade.rotation.y = arc * 0.22;
+    group.add(blade);
+  } else if (style === 'djonga') {
+    for (let i = 0; i < 3; i++) {
+      const a = (-0.22 + i * 0.22);
+      const fist = new THREE.Mesh(new THREE.SphereGeometry(0.14 - i * 0.018, 10, 8), mat(0xffd1bd, 0.72));
+      fist.position.set(Math.sin(a) * range * (0.55 + i * 0.13), 0.16, Math.cos(a) * range * (0.55 + i * 0.13));
+      group.add(fist);
+      const impact = new THREE.Mesh(new THREE.RingGeometry(0.12, 0.22, 18), mat(color, 0.42));
+      impact.rotation.x = -Math.PI / 2;
+      impact.position.copy(fist.position);
+      impact.position.y = 0.08;
+      group.add(impact);
+    }
+  } else {
+    const slashGeo = new THREE.TorusGeometry(range * 0.43, 0.025, 6, 48, arc * 0.72);
+    const slash = new THREE.Mesh(slashGeo, mat(0xffffff, 0.55));
+    slash.rotation.x = -Math.PI / 2;
+    slash.rotation.z = -arc * 0.36;
+    slash.position.set(0, 0.1, range * 0.33);
+    group.add(slash);
+  }
 
   return group;
 }
@@ -159,9 +186,10 @@ export class ConeSlash {
     this.hit = false;
     this.ghost = !!opts.ghost;
     this.superGain = opts.superGain || 10;
+    this.style = opts.style || 'default';
     this.targetPlayer = opts.targetPlayer || null;
     this.onHitPlayer = opts.onHitPlayer || null;
-    this.mesh = buildConeMesh(range, arc, color);
+    this.mesh = buildConeMesh(range, arc, color, this.style);
     this.mesh.position.set(x, 0, z);
     this.mesh.rotation.y = angle;
     this.mesh.visible = this.delay <= 0;
@@ -182,7 +210,9 @@ export class ConeSlash {
         this.onHitPlayer && this.onHitPlayer(this.damage, { x: this.targetPlayer.x, y: 0.55, z: this.targetPlayer.z }, this);
       }
       this.hit = true;
-      ps.burst({ x: this.x + Math.sin(this.angle) * this.range * 0.55, y: 0.35, z: this.z + Math.cos(this.angle) * this.range * 0.55 }, { color: this.color, count: 10, speed: 1.8, life: 0.2 });
+      const burstCount = this.style === 'luan' ? 5 : this.style === 'djonga' ? 4 : 10;
+      const burstLife = this.style === 'luan' || this.style === 'djonga' ? 0.13 : 0.2;
+      ps.burst({ x: this.x + Math.sin(this.angle) * this.range * 0.55, y: 0.35, z: this.z + Math.cos(this.angle) * this.range * 0.55 }, { color: this.color, count: burstCount, speed: 1.45, life: burstLife, cube: this.style === 'djonga' });
     }
     this.life -= dt;
     const t = Math.max(0, this.life / this.maxLife);
@@ -355,6 +385,7 @@ export class DashAttack {
     this.tick = 0;
     this.ghost = !!opts.ghost;
     this.trailTimer = 0;
+    this.active = true;
 
     this.group = new THREE.Group();
     addRing(this.group, 0.25, this.radius, 0.06, color, 0.6, 48);
@@ -388,7 +419,8 @@ export class DashAttack {
 
   update(dt, world, ps, player) {
     this.life -= dt;
-    if (!this.ghost && this.playerRef) {
+    if (this.life <= 0) this.active = false;
+    if (this.active && !this.ghost && this.playerRef) {
       this.playerRef.moveBy(Math.sin(this.angle) * this.speed * dt, Math.cos(this.angle) * this.speed * dt, world);
       this.playerRef.startSpin(0.14);
       this.tick -= dt;
@@ -410,8 +442,8 @@ export class DashAttack {
     this.group.rotation.y += dt * 12;
     const t = Math.max(0, this.life / this.duration);
     this.group.traverse(obj => { if (obj.material) obj.material.opacity = Math.min(obj.material.opacity, t * 0.7 + 0.02); });
+    if (this.life <= 0 && this.group && this.group.parent) dispose(this.scene, this.group);
     if (this.life <= 0 && (!this.trails || !this.trails.length)) this.kill();
-    else if (this.life <= 0) dispose(this.scene, this.group);
   }
 
   kill() {
@@ -483,6 +515,7 @@ export class LeapAttack {
           this.playerRef.tryMove(this.targetX, this.targetZ, world);
           this.playerRef.root.position.y = 0;
           applyAreaDamage(world, ps, player, this.playerRef.x, this.playerRef.z, this.radius, this.damage, 22, this.color);
+          if (this.playerRef.startSpeedBoost) this.playerRef.startSpeedBoost(5, 1.55);
         }
         ps.burst({ x: this.targetX, y: 0.45, z: this.targetZ }, { color: this.color, count: 40, speed: 4.4, life: 0.65, cube: true });
         dispose(this.scene, this.targetGroup);
@@ -547,50 +580,95 @@ export class SmokeCloud {
   }
 }
 
-export class PoisonPuddle extends ImpactArea {
+export class PoisonPuddle {
   constructor(scene, x, z, radius, damage, color, opts = {}) {
-    super(scene, x, z, radius, damage, color, { ...opts, life: opts.life || 2.15, opacity: 0.18 });
+    this.scene = scene;
+    this.x = clamp(x, radius * 0.35, ARENA_W - radius * 0.35);
+    this.z = clamp(z, radius * 0.35, ARENA_D - radius * 0.35);
+    this.radius = radius;
+    this.damage = damage;
+    this.color = color;
+    this.life = opts.life || 3.2;
+    this.maxLife = this.life;
+    this.delay = opts.delay || 0;
+    this.ghost = !!opts.ghost;
+    this.targetPlayer = opts.targetPlayer || null;
+    this.onHitPlayer = opts.onHitPlayer || null;
     this.tick = 0;
-    this.puddle = new THREE.Group();
-    addDisc(this.puddle, radius * 1.05, 0.04, 0x144b36, 0.38, 54);
-    addRing(this.puddle, radius * 0.92, radius * 1.08, 0.06, color, 0.7, 64);
+    this.damageTick = 0;
+    this.healTick = 0;
+    this.visibleStarted = this.delay <= 0;
+
+    this.group = new THREE.Group();
+    addDisc(this.group, radius * 1.05, 0.04, 0x144b36, 0.28, 54);
+    addRing(this.group, radius * 0.92, radius * 1.08, 0.06, color, 0.58, 64);
+    addRing(this.group, radius * 0.36, radius * 0.5, 0.08, 0xd8ffe2, 0.24, 42);
     for (let i = 0; i < 12; i++) {
       const a = (i / 12) * Math.PI * 2;
       const rr = radius * (0.2 + (i % 5) * 0.14);
-      const bubble = new THREE.Mesh(new THREE.SphereGeometry(0.05 + (i % 3) * 0.018, 8, 6), mat(i % 2 ? color : 0xd8ffe2, 0.62));
+      const bubble = new THREE.Mesh(new THREE.SphereGeometry(0.05 + (i % 3) * 0.018, 8, 6), mat(i % 2 ? color : 0xd8ffe2, 0.52));
       bubble.position.set(Math.cos(a) * rr, 0.12 + (i % 3) * 0.04, Math.sin(a) * rr);
       bubble.userData.baseY = bubble.position.y;
       bubble.userData.phase = i * 0.6;
-      this.puddle.add(bubble);
+      this.group.add(bubble);
     }
-    this.puddle.position.set(this.x, 0, this.z);
-    this.puddle.visible = this.delay <= 0;
-    scene.add(this.puddle);
+    this.group.position.set(this.x, 0, this.z);
+    this.group.visible = this.visibleStarted;
+    this.group.renderOrder = 830;
+    scene.add(this.group);
+    this.mesh = this.group;
   }
 
   update(dt, world, ps, player) {
-    const wasDelay = this.delay;
-    super.update(dt, world, ps, player);
-    if (this.dead) return;
-    if (wasDelay > 0 && this.delay <= 0) this.puddle.visible = true;
+    if (this.delay > 0) {
+      this.delay -= dt;
+      if (this.delay <= 0) {
+        this.group.visible = true;
+        this.visibleStarted = true;
+        ps.burst({ x: this.x, y: 0.3, z: this.z }, { color: this.color, count: 18, speed: 2.0, life: 0.35 });
+      }
+      return;
+    }
+
+    this.life -= dt;
     this.tick += dt;
-    this.puddle.rotation.y += dt * 0.16;
+    this.damageTick -= dt;
+    this.healTick -= dt;
+
+    if (!this.ghost && player && player.brawlerId === 'ministro' && !player.isDown && playerInArea(player, this.x, this.z, this.radius)) {
+      if (player.heal(dt * 18)) {
+        if (this.healTick <= 0) {
+          this.healTick = 0.35;
+          ps.burst({ x: player.x, y: 0.55, z: player.z }, { color: this.color, count: 3, speed: 0.7, life: 0.22 });
+        }
+      }
+    }
+
+    if (this.ghost && this.targetPlayer && !this.targetPlayer.isDown && playerInArea(this.targetPlayer, this.x, this.z, this.radius)) {
+      if (this.damageTick <= 0) {
+        this.damageTick = 0.45;
+        this.onHitPlayer && this.onHitPlayer(6, { x: this.targetPlayer.x, y: 0.55, z: this.targetPlayer.z }, this);
+      }
+    }
+
     const t = Math.max(0, this.life / this.maxLife);
-    this.puddle.traverse(obj => {
-      if (obj.material) obj.material.opacity = Math.min(obj.material.opacity, t * 0.75 + 0.04);
+    this.group.rotation.y += dt * 0.16;
+    this.group.scale.setScalar(0.96 + Math.sin(this.tick * 2.2) * 0.025);
+    this.group.traverse(obj => {
+      if (obj.material) obj.material.opacity = Math.min(obj.material.opacity, t * 0.72 + 0.03);
       if (obj.userData && obj.userData.baseY !== undefined) {
         obj.position.y = obj.userData.baseY + Math.sin(this.tick * 5 + obj.userData.phase) * 0.035;
       }
     });
     if (Math.floor(this.tick * 8) % 5 === 0) {
-      ps.burst({ x: this.x, y: 0.2, z: this.z }, { color: this.color, count: 2, speed: 0.8, life: 0.22 });
+      ps.burst({ x: this.x, y: 0.2, z: this.z }, { color: this.color, count: 1, speed: 0.65, life: 0.18 });
     }
+    if (this.life <= 0) this.kill();
   }
 
   kill() {
     this.dead = true;
     dispose(this.scene, this.group);
-    dispose(this.scene, this.puddle);
   }
 }
 

@@ -34,14 +34,13 @@ function makeProjectileMesh(style, color, size, glowSize) {
 
   if (style === 'thomas') {
     // Leon-like blade: sharp blue dagger moving nose-first.
-    const blade = new THREE.Mesh(new THREE.ConeGeometry(size * 0.62, size * 4.8, 4), basicMat(0x94e7ff));
+    const blade = new THREE.Mesh(new THREE.ConeGeometry(size * 0.62, size * 4.8, 4), basicMat(0xd7edf5));
     blade.rotation.x = Math.PI / 2;
     blade.position.z = size * 0.95;
     group.add(blade);
-    const handle = new THREE.Mesh(new THREE.BoxGeometry(size * 0.55, size * 0.42, size * 1.3), basicMat(0x11203b));
+    const handle = new THREE.Mesh(new THREE.BoxGeometry(size * 0.65, size * 0.42, size * 1.3), basicMat(0x0a1324));
     handle.position.z = -size * 0.7;
     group.add(handle);
-    addProjectileGlow(group, 0x74d8ff, glowSize, 0.25);
     return group;
   }
 
@@ -62,13 +61,12 @@ function makeProjectileMesh(style, color, size, glowSize) {
 
   if (style === 'lorenzo') {
     // Pam-like scrap pellet: small tech bolt/scrap instead of generic sphere.
-    const bolt = new THREE.Mesh(new THREE.CylinderGeometry(size * 0.42, size * 0.42, size * 2.4, 6), basicMat(0xd6f7f1));
+    const bolt = new THREE.Mesh(new THREE.CylinderGeometry(size * 0.36, size * 0.5, size * 2.5, 6), basicMat(0xbfc6c7));
     bolt.rotation.x = Math.PI / 2;
     group.add(bolt);
-    const cap = new THREE.Mesh(new THREE.BoxGeometry(size * 1.2, size * 0.35, size * 0.9), basicMat(color));
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(size * 1.35, size * 0.32, size * 0.75), basicMat(0x303840));
     cap.position.z = size * 0.35;
     group.add(cap);
-    addProjectileGlow(group, color, glowSize * 0.95, 0.26);
     return group;
   }
 
@@ -84,6 +82,11 @@ function makeProjectileMesh(style, color, size, glowSize) {
     const vial = new THREE.Mesh(new THREE.SphereGeometry(size * 0.52, 8, 6), basicMat(color, 0.85));
     vial.position.z = -size * 1.5;
     group.add(vial);
+    for (const side of [-1, 1]) {
+      const fin = new THREE.Mesh(new THREE.BoxGeometry(size * 0.18, size * 0.7, size * 0.9), basicMat(0x183b2e));
+      fin.position.set(side * size * 0.38, 0, -size * 2.1);
+      group.add(fin);
+    }
     addProjectileGlow(group, color, glowSize, 0.25);
     return group;
   }
@@ -117,6 +120,11 @@ export class Projectile {
     this.brawlerId = opts.brawlerId || null;
     this.pierce = !!opts.pierce;
     this.superGain = opts.superGain || null;
+    this.superGainOnPlayer = opts.superGainOnPlayer ?? opts.superGain ?? null;
+    this.superGainCap = opts.superGainCap ?? null;
+    this.actionId = opts.actionId || null;
+    this.actionKind = opts.actionKind || 'basic';
+    this.hitType = opts.hitType || 'projectile';
     this.onExpire = opts.onExpire || null;
     this.scene = scene;
     this.targetPlayer = opts.targetPlayer || null;
@@ -138,15 +146,16 @@ export class Projectile {
 
   update(dt, world, ps, player) {
     this.trailTimer -= dt;
-    if (this.trailTimer <= 0 && ps) {
-      this.trailTimer = this.brawlerId === 'gui' ? 0.035 : this.brawlerId === 'joao' ? 0.045 : 0.055;
-      const trailColor = this.brawlerId === 'ministro' ? 0x39d98a : this.brawlerId === 'thomas' ? 0x9feaff : this.brawlerId === 'lorenzo' ? 0x00d7c7 : this.color;
+    const magicalTrail = this.brawlerId === 'joao' || this.brawlerId === 'gui' || this.brawlerId === 'ministro';
+    if (magicalTrail && this.trailTimer <= 0 && ps) {
+      this.trailTimer = this.brawlerId === 'gui' ? 0.04 : this.brawlerId === 'joao' ? 0.05 : 0.055;
+      const trailColor = this.brawlerId === 'ministro' ? 0x39d98a : this.color;
       ps.burst({ x: this.x, y: this.y, z: this.z }, {
         color: trailColor,
-        count: this.big ? 3 : 2,
-        speed: this.big ? 0.9 : 0.55,
-        life: this.big ? 0.28 : 0.18,
-        cube: this.brawlerId === 'lorenzo'
+        count: this.big ? 3 : 1,
+        speed: this.big ? 0.75 : 0.42,
+        life: this.big ? 0.24 : 0.14,
+        cube: false
       });
     }
     for (let s = 0; s < 2; s++) {
@@ -181,7 +190,7 @@ export class Projectile {
           if (pointInRectXZ(this.x, this.z, o.bounds)) {
             const res = o.hit({ x: this.x, y: this.y, z: this.z }, ps, this.currentDamage());
             if (res && player) {
-              player.gainSuper(this.superGain || res.superGain);
+              player.gainSuper(this.superGain || res.superGain, this.actionId, this.superGainCap ?? Infinity);
               if (player.markCombat) player.markCombat();
             }
             if (!this.pierce) {

@@ -725,3 +725,28 @@ html, body {
   .brawler-detail-copy h2 { font-size: 42px; }
   .switch-panel { left: 12px; right: 12px; top: 80px; width: auto; }
 }
+
+#combat-texts {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 8;
+}
+
+.combat-text {
+  position: absolute;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 19px;
+  letter-spacing: 0.04em;
+  color: #fff8e8;
+  -webkit-text-stroke: 2px var(--ink-900);
+  text-shadow: 0 3px 0 rgba(12, 20, 32, 0.75);
+  will-change: transform, opacity;
+}
+
+.combat-text.is-damage { color: #ffe2df; }
+.combat-text.is-poison { color: #b8ffca; }
+.combat-text.is-heal { color: #b8ffdf; }
+
+#hud-combat { color: var(--teal-dark); }

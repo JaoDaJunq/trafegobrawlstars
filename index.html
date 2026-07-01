@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Brawl Adapt 3D — Fase 12 · Modos e Ranking</title>
+<title>Brawl Adapt 3D — Fase 15 · Polimento e Combate</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800;900&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
@@ -20,6 +20,7 @@
       <span class="eyebrow" id="hud-timer">05:00</span>
       <span class="eyebrow" id="hud-toxic">NÉVOA 100%</span>
       <span class="eyebrow" id="hud-kills">KILLS 0</span>
+      <span class="eyebrow" id="hud-combat">DMG 0 · TOMOU 0 · CURA 0</span>
       <span class="eyebrow" id="hud-mode">MODO</span>
       <span class="eyebrow" id="hud-brawler">Brawler</span>
       <div id="hud-health"><span id="hud-health-fill"></span><b id="hud-health-text">-- / --</b></div>
@@ -41,12 +42,13 @@
   </div>
 
   <div id="name-tags"></div>
+  <div id="combat-texts"></div>
 
   <div id="menu-overlay">
     <div class="menu-card">
       <span class="menu-eyebrow">ADAPT · INTERNO</span>
       <h1>BRAWL ADAPT</h1>
-      <p class="menu-tag">protótipo 3D — fase 12 · modos, lobby e ranking</p>
+      <p class="menu-tag">protótipo 3D — fase 15 · polimento, contadores e combate</p>
 
 
       <div class="mode-select">

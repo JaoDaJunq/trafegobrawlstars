@@ -30,11 +30,14 @@ export class Player {
 
     this.superCharge = 0;
     this.superMax = 100;
+    this.superGainBuckets = new Map();
 
     this.muzzleFlash = 0;
     this.bob = 0;
     this.stealthTimer = 0;
     this.spinTimer = 0;
+    this.speedBoostTimer = 0;
+    this.speedBoostMultiplier = 1;
     this.rootedTimer = 0;
     this.invulnTimer = 0;
     this.outOfCombatTimer = 0;
@@ -58,6 +61,12 @@ export class Player {
   update(dt, input, world) {
     if (this.invulnTimer > 0) this.invulnTimer -= dt;
     if (this.rootedTimer > 0) this.rootedTimer -= dt;
+    if (this.superGainBuckets.size) {
+      for (const [key, bucket] of Array.from(this.superGainBuckets.entries())) {
+        bucket.life -= dt;
+        if (bucket.life <= 0) this.superGainBuckets.delete(key);
+      }
+    }
 
     if (this.isDown) {
       this.fireCooldown = Math.max(this.fireCooldown, 0.2);
@@ -86,8 +95,10 @@ export class Player {
       mz /= len;
       const targetAngle = Math.atan2(mx, mz);
       this.bodyAngle = lerpAngle(this.bodyAngle, targetAngle, 1 - Math.pow(0.0005, dt));
-      const nx = this.x + mx * this.speed * dt;
-      const nz = this.z + mz * this.speed * dt;
+      const stealthBoost = this.brawlerId === 'thomas' && this.stealthTimer > 0 ? 1.48 : 1;
+      const boost = Math.max(stealthBoost, this.speedBoostTimer > 0 ? this.speedBoostMultiplier : 1);
+      const nx = this.x + mx * this.speed * boost * dt;
+      const nz = this.z + mz * this.speed * boost * dt;
       this.tryMove(nx, nz, world);
       this.bob += dt * 9;
     } else {
@@ -107,6 +118,10 @@ export class Player {
     if (this.muzzleFlash > 0) this.muzzleFlash -= dt;
     if (this.stealthTimer > 0) this.stealthTimer -= dt;
     if (this.spinTimer > 0) this.spinTimer -= dt;
+    if (this.speedBoostTimer > 0) {
+      this.speedBoostTimer -= dt;
+      if (this.speedBoostTimer <= 0) this.speedBoostMultiplier = 1;
+    }
 
     this.inBush = world.bushes.some(b => world.circleOverlapsBush(this.x, this.z, this.radius * 0.6, b));
 
@@ -167,8 +182,20 @@ export class Player {
     return { x: tip.x, y: tip.y, z: tip.z, angle: this.aimAngle, brawlerId: this.brawlerId };
   }
 
-  gainSuper(amount) {
-    this.superCharge = Math.min(this.superMax, this.superCharge + amount);
+  gainSuper(amount, actionId = null, cap = Infinity) {
+    if (!amount || amount <= 0) return 0;
+    let gain = amount;
+    if (actionId && Number.isFinite(cap)) {
+      const bucket = this.superGainBuckets.get(actionId) || { gained: 0, life: 2.2 };
+      const remaining = Math.max(0, cap - bucket.gained);
+      gain = Math.min(gain, remaining);
+      bucket.gained += gain;
+      bucket.life = 2.2;
+      this.superGainBuckets.set(actionId, bucket);
+    }
+    if (gain <= 0) return 0;
+    this.superCharge = Math.min(this.superMax, this.superCharge + gain);
+    return gain;
   }
 
   canSuper() {
@@ -182,6 +209,12 @@ export class Player {
 
   startStealth(seconds = 4) {
     this.stealthTimer = seconds;
+  }
+
+  startSpeedBoost(seconds = 5, multiplier = 1.35) {
+    if (this.isDown) return;
+    this.speedBoostTimer = Math.max(this.speedBoostTimer, seconds);
+    this.speedBoostMultiplier = Math.max(this.speedBoostMultiplier || 1, multiplier);
   }
 
   startSpin(seconds = 0.35) {
@@ -226,7 +259,8 @@ export class Player {
       r: this.brawlerId,
       hp: this.hp,
       d: this.isDown,
-      rt: this.rootedTimer > 0
+      rt: this.rootedTimer > 0,
+      sb: this.speedBoostTimer > 0
     };
   }
 }

@@ -244,15 +244,18 @@ function addRoseWeapon(g) {
 }
 
 function addSword(g, accent) {
-  box(g, v3(0.16, 0.14, 0.35), v3(0, -0.03, 0.35), 0x15161a, { outline: 0.05 });
-  box(g, v3(0.16, 0.085, 1.55), v3(0, 0, 1.08), 0x2a2b30, { outline: 0.055 });
-  box(g, v3(0.045, 0.12, 1.42), v3(0, 0.02, 1.12), accent, { outline: 0.018 });
+  box(g, v3(0.2, 0.16, 0.38), v3(0, -0.04, 0.36), 0x121318, { outline: 0.055 });
+  box(g, v3(0.62, 0.08, 0.12), v3(0, 0.015, 0.56), 0x0a0b0f, { outline: 0.04 });
+  box(g, v3(0.19, 0.075, 1.8), v3(0, 0, 1.24), 0x23252b, { outline: 0.06 });
+  box(g, v3(0.055, 0.105, 1.68), v3(0, 0.025, 1.26), accent, { outline: 0.018 });
+  box(g, v3(0.22, 0.035, 0.18), v3(0, 0.01, 2.17), 0xf0f0f0, { outline: 0.022 });
 }
 
 function addBlades(g, accent) {
-  for (const x of [-0.23, 0.23]) {
-    box(g, v3(0.07, 0.055, 1.0), v3(x, 0, 0.82), accent, { outline: 0.04, rot: { z: x < 0 ? 0.22 : -0.22 } });
-    box(g, v3(0.09, 0.08, 0.22), v3(x, -0.01, 0.36), 0x12203b, { outline: 0.035 });
+  for (const x of [-0.24, 0.24]) {
+    box(g, v3(0.08, 0.045, 1.08), v3(x, 0, 0.86), 0xd7edf5, { outline: 0.04, rot: { z: x < 0 ? 0.28 : -0.28 } });
+    box(g, v3(0.035, 0.062, 0.9), v3(x + (x < 0 ? -0.028 : 0.028), 0.01, 0.93), accent, { outline: 0.014, rot: { z: x < 0 ? 0.28 : -0.28 } });
+    box(g, v3(0.12, 0.085, 0.26), v3(x, -0.02, 0.36), 0x0a1324, { outline: 0.04 });
   }
 }
 
@@ -266,20 +269,22 @@ function addOrb(g, accent) {
 }
 
 function addCannon(g, accent) {
-  cyl(g, 0.34, 0.23, 0.9, v3(0, 0, 0.78), 0x131a20, { outline: 0.09, rot: { x: Math.PI / 2 }, radial: 22 });
-  cyl(g, 0.27, 0.27, 0.18, v3(0, 0, 1.25), 0x253640, { outline: 0.06, rot: { x: Math.PI / 2 }, radial: 22 });
-  for (let i = 0; i < 8; i++) {
-    const a = i * Math.PI / 4;
-    sphere(g, 0.052, v3(Math.cos(a) * 0.15, Math.sin(a) * 0.11, 1.36), accent, v3(1, 1, 1), { outline: 0.016 });
+  cyl(g, 0.38, 0.25, 0.98, v3(0, 0, 0.78), 0x10171d, { outline: 0.095, rot: { x: Math.PI / 2 }, radial: 22 });
+  cyl(g, 0.3, 0.3, 0.2, v3(0, 0, 1.3), 0x263640, { outline: 0.065, rot: { x: Math.PI / 2 }, radial: 22 });
+  for (let i = 0; i < 9; i++) {
+    const a = i * Math.PI * 2 / 9;
+    cyl(g, 0.036, 0.04, 0.42, v3(Math.cos(a) * 0.16, Math.sin(a) * 0.12, 1.5), i % 2 ? accent : 0xbfc6c7, { outline: 0.014, rot: { x: Math.PI / 2 }, radial: 8 });
   }
-  box(g, v3(0.2, 0.11, 0.34), v3(0, -0.19, 0.55), 0x00a79c, { outline: 0.025 });
+  box(g, v3(0.28, 0.14, 0.4), v3(0, -0.22, 0.54), 0x00a79c, { outline: 0.028 });
+  box(g, v3(0.42, 0.08, 0.18), v3(0, 0.25, 0.66), 0x303840, { outline: 0.02 });
 }
 
 function addDart(g, accent) {
-  box(g, v3(0.1, 0.1, 0.98), v3(0, 0, 0.78), 0x18201d, { outline: 0.045 });
-  box(g, v3(0.48, 0.06, 0.1), v3(0, 0.02, 0.63), 0x9b7b3a, { outline: 0.025 });
-  cyl(g, 0.045, 0.085, 0.3, v3(0, 0, 1.35), accent, { outline: 0.03, rot: { x: Math.PI / 2 } });
-  sphere(g, 0.08, v3(0, -0.1, 0.42), accent, v3(0.85, 1.2, 0.85), { outline: 0.025 });
+  box(g, v3(0.1, 0.1, 1.02), v3(0, 0, 0.78), 0x18201d, { outline: 0.045 });
+  box(g, v3(0.56, 0.065, 0.1), v3(0, 0.02, 0.63), 0x9b7b3a, { outline: 0.025 });
+  cyl(g, 0.038, 0.072, 0.55, v3(0, 0, 1.48), accent, { outline: 0.03, rot: { x: Math.PI / 2 }, radial: 12 });
+  cyl(g, 0.06, 0.06, 0.24, v3(0, -0.11, 0.44), accent, { outline: 0.025 });
+  sphere(g, 0.075, v3(0, -0.11, 0.56), 0xd8ffe2, v3(0.85, 1.2, 0.85), { outline: 0.018 });
 }
 
 function addFists(g) {

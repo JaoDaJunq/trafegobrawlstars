@@ -21,6 +21,8 @@ const hudBrawler = document.getElementById('hud-brawler');
 const hudAlive = document.getElementById('hud-alive');
 const hudTimer = document.getElementById('hud-timer');
 const hudToxic = document.getElementById('hud-toxic');
+const hudKills = document.getElementById('hud-kills');
+const hudMode = document.getElementById('hud-mode');
 const hudHealthFill = document.getElementById('hud-health-fill');
 const hudHealthText = document.getElementById('hud-health-text');
 const menuOverlay = document.getElementById('menu-overlay');
@@ -32,6 +34,24 @@ const roomStatus = document.getElementById('room-status');
 const nameTagsContainer = document.getElementById('name-tags');
 const brawlerGrid = document.getElementById('brawler-grid');
 const brawlerSummary = document.getElementById('brawler-summary');
+const modeBattleBtn = document.getElementById('mode-battle-btn');
+const modeOpenBtn = document.getElementById('mode-open-btn');
+const lobbyPanel = document.getElementById('lobby-panel');
+const lobbyInfo = document.getElementById('lobby-info');
+const startMatchBtn = document.getElementById('start-match-btn');
+const brawlerDetail = document.getElementById('brawler-detail');
+const brawlerDetailClose = document.getElementById('brawler-detail-close');
+const brawlerDetailImg = document.getElementById('brawler-detail-img');
+const brawlerDetailRole = document.getElementById('brawler-detail-role');
+const brawlerDetailName = document.getElementById('brawler-detail-name');
+const brawlerDetailTitle = document.getElementById('brawler-detail-title');
+const brawlerDetailStats = document.getElementById('brawler-detail-stats');
+const brawlerDetailAttack = document.getElementById('brawler-detail-attack');
+const brawlerDetailSuper = document.getElementById('brawler-detail-super');
+const brawlerDetailConfirm = document.getElementById('brawler-detail-confirm');
+const switchPanel = document.getElementById('switch-panel');
+const switchGrid = document.getElementById('switch-grid');
+const switchClose = document.getElementById('switch-close');
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(COLORS.sky);
@@ -155,6 +175,14 @@ const remotePlayers = new Map();
 const nameTagPool = new Map();
 
 let selectedBrawlerId = DEFAULT_BRAWLER_ID;
+let pendingDetailBrawlerId = DEFAULT_BRAWLER_ID;
+let selectedGameMode = 'battle';
+let rosterEntries = [];
+let isHost = false;
+let matchStartAt = 0;
+let countdownTimer = 0;
+let openRespawnTimer = 0;
+const playerStats = new Map();
 let player = null;
 let projectiles = [];
 let effects = [];
@@ -200,7 +228,7 @@ function renderBrawlerCards() {
       <small>${b.title}</small>
       <em>${b.hp} HP</em>
     `;
-    btn.addEventListener('click', () => selectBrawler(b.id));
+    btn.addEventListener('click', () => openBrawlerDetail(b.id));
     brawlerGrid.appendChild(btn);
   }
   updateBrawlerSummary();
@@ -218,7 +246,94 @@ function updateBrawlerSummary() {
   const b = getBrawler(selectedBrawlerId);
   brawlerSummary.textContent = `${b.name}: ${b.attack} · Super: ${b.super} · Vida ${b.hp}`;
 }
+
+function openBrawlerDetail(id) {
+  const b = getBrawler(id);
+  pendingDetailBrawlerId = b.id;
+  brawlerDetailImg.src = b.concept || b.portrait;
+  brawlerDetailImg.alt = b.name;
+  brawlerDetailRole.textContent = b.role;
+  brawlerDetailName.textContent = b.name;
+  brawlerDetailTitle.textContent = b.title;
+  brawlerDetailStats.innerHTML = `
+    <span>${b.hp} HP</span>
+    <span>Dano ${b.damage}</span>
+    <span>Vel. ${b.speed.toFixed(1)}</span>
+    <span>Recarga ${b.reloadTime.toFixed(2)}s</span>
+  `;
+  brawlerDetailAttack.textContent = `Ataque: ${b.attack}`;
+  brawlerDetailSuper.textContent = `Super: ${b.super}`;
+  brawlerDetail.classList.remove('hidden');
+}
+
+function closeBrawlerDetail() {
+  brawlerDetail.classList.add('hidden');
+}
+
+brawlerDetailClose.addEventListener('click', closeBrawlerDetail);
+brawlerDetail.addEventListener('click', e => { if (e.target === brawlerDetail) closeBrawlerDetail(); });
+brawlerDetailConfirm.addEventListener('click', () => {
+  selectBrawler(pendingDetailBrawlerId);
+  closeBrawlerDetail();
+});
+
+function selectMode(mode) {
+  selectedGameMode = mode;
+  modeBattleBtn.classList.toggle('is-selected', mode === 'battle');
+  modeOpenBtn.classList.toggle('is-selected', mode === 'open');
+  updateModeHud();
+}
+modeBattleBtn.addEventListener('click', () => selectMode('battle'));
+modeOpenBtn.addEventListener('click', () => selectMode('open'));
+
+function updateModeHud() {
+  if (hudMode) hudMode.textContent = selectedGameMode === 'battle' ? 'BR' : 'ABERTO';
+}
+
 renderBrawlerCards();
+
+function renderSwitchGrid() {
+  switchGrid.innerHTML = '';
+  for (const b of BRAWLERS) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'switch-brawler' + (b.id === selectedBrawlerId ? ' is-selected' : '');
+    btn.dataset.brawlerId = b.id;
+    btn.innerHTML = `<img src="${b.portrait}" alt="${b.name}"><strong>${b.name}</strong>`;
+    btn.addEventListener('click', () => switchBrawlerInOpenMode(b.id));
+    switchGrid.appendChild(btn);
+  }
+}
+
+function toggleSwitchPanel(force) {
+  if (selectedGameMode !== 'open' || state !== 'playing') return;
+  renderSwitchGrid();
+  const shouldShow = force === undefined ? switchPanel.classList.contains('hidden') : !!force;
+  switchPanel.classList.toggle('hidden', !shouldShow);
+}
+
+switchClose.addEventListener('click', () => toggleSwitchPanel(false));
+
+function switchBrawlerInOpenMode(id) {
+  if (!player || selectedGameMode !== 'open') return;
+  const x = player.x;
+  const z = player.z;
+  scene.remove(player.root);
+  player.root.traverse(obj => {
+    if (obj.geometry) obj.geometry.dispose();
+    if (obj.material) obj.material.dispose();
+  });
+  selectedBrawlerId = id;
+  room.myBrawlerId = id;
+  room.setBrawler(id);
+  player = new Player(x, z, id, room.mySlot);
+  scene.add(player.root);
+  openRespawnTimer = 0;
+  lastDownBroadcast = false;
+  updateHudStatic();
+  renderSwitchGrid();
+  room.sendCombat({ type: 'brawler_change', targetId: room.myId, brawlerId: id });
+}
 
 function spawnPointFor(slot) {
   return SPAWN_POINTS[slot % SPAWN_POINTS.length];
@@ -412,6 +527,38 @@ function isOutsideSafeZone(x, z) {
   return Math.hypot(x - ARENA_W / 2, z - ARENA_D / 2) > safeRadius();
 }
 
+function ensureStats(id, name = 'Jogador') {
+  if (!id) return null;
+  if (!playerStats.has(id)) playerStats.set(id, { kills: 0, deaths: 0, name });
+  const s = playerStats.get(id);
+  s.name = name || s.name;
+  return s;
+}
+
+function getKills(id) {
+  return playerStats.get(id)?.kills || 0;
+}
+
+function leaderId() {
+  let best = null;
+  let bestKills = 0;
+  for (const [id, s] of playerStats.entries()) {
+    if (s.kills > bestKills) {
+      bestKills = s.kills;
+      best = id;
+    }
+  }
+  return bestKills > 0 ? best : null;
+}
+
+function registerKill(killerId, victimId) {
+  if (!killerId || killerId === victimId) return;
+  const killerName = killerId === room.myId ? room.myName : (remotePlayers.get(killerId)?.name || 'Jogador');
+  const victimName = victimId === room.myId ? room.myName : (remotePlayers.get(victimId)?.name || 'Jogador');
+  ensureStats(killerId, killerName).kills++;
+  ensureStats(victimId, victimName).deaths++;
+}
+
 function aliveCount() {
   let count = player && !player.isDown ? 1 : 0;
   for (const rp of remotePlayers.values()) {
@@ -449,6 +596,26 @@ function applyToxicDamage(dt) {
     broadcastHealth(result.downed ? 'toxic-down' : 'toxic');
     if (result.downed) enterSpectator('morreu na névoa tóxica');
   }
+}
+
+function respawnOpenPlayer() {
+  if (!player || selectedGameMode !== 'open') return;
+  const sp = spawnPointFor((room.mySlot + Math.floor(Math.random() * 5)) % SPAWN_POINTS.length);
+  player.x = sp.x;
+  player.z = sp.z;
+  player.hp = player.hpMax;
+  player.isDown = false;
+  player.invulnTimer = 1.5;
+  player.root.visible = true;
+  openRespawnTimer = 0;
+  lastDownBroadcast = false;
+  broadcastHealth('open-respawn');
+}
+
+function handleOpenRespawn(dt) {
+  if (selectedGameMode !== 'open' || !player || !player.isDown) return;
+  openRespawnTimer += dt;
+  if (openRespawnTimer >= 3) respawnOpenPlayer();
 }
 
 function pointSegmentDistance(px, pz, ax, az, bx, bz) {
@@ -499,7 +666,15 @@ function applyIncomingDamage(amount, point, event = {}) {
   });
   shakeTimer = Math.max(shakeTimer, result.downed ? 0.26 : 0.1);
   broadcastHealth(result.downed ? 'downed' : 'damage');
-  if (result.downed) enterSpectator('foi eliminado');
+  if (result.downed) {
+    const killerId = event.id || event.attackerId;
+    if (killerId) {
+      registerKill(killerId, room.myId);
+      room.sendCombat({ type: 'kill', killerId, victimId: room.myId });
+    }
+    if (selectedGameMode === 'battle') enterSpectator('foi eliminado');
+    else openRespawnTimer = 0;
+  }
 }
 
 function incomingEffectOpts(event, ghost) {
@@ -526,22 +701,57 @@ function applyIncomingDash(event) {
 
 function startGame() {
   const sp = spawnPointFor(room.mySlot);
+  if (player) {
+    scene.remove(player.root);
+    player.root.traverse(obj => {
+      if (obj.geometry) obj.geometry.dispose();
+      if (obj.material) obj.material.dispose();
+    });
+  }
   player = new Player(sp.x, sp.z, room.myBrawlerId || selectedBrawlerId, room.mySlot);
   scene.add(player.root);
   isSpectator = false;
   matchElapsed = 0;
   toxicDamageTimer = 0;
   toxicVisualTimer = 0;
+  openRespawnTimer = 0;
   lastDownBroadcast = false;
-  rebuildToxicVisual(true);
+  if (selectedGameMode === 'battle') rebuildToxicVisual(true);
+  else {
+    disposeObject(toxicMesh);
+    disposeObject(toxicRing);
+    toxicMesh = null;
+    toxicRing = null;
+  }
   state = 'playing';
   menuOverlay.classList.add('hidden');
+  lobbyPanel.classList.add('hidden');
+  switchPanel.classList.add('hidden');
+  ensureStats(room.myId, room.myName);
   updateHudStatic();
+}
+
+function scheduleMatchStart(payload = {}) {
+  matchStartAt = payload.startAt || (Date.now() + 2500);
+  countdownTimer = Math.max(0, (matchStartAt - Date.now()) / 1000);
+  state = 'countdown';
+  started = true;
+  lobbyPanel.classList.remove('hidden');
+  startMatchBtn.disabled = true;
+  setStatus('Partida sincronizada. Preparar...', 'ok');
+}
+
+function updateCountdown() {
+  countdownTimer = Math.max(0, (matchStartAt - Date.now()) / 1000);
+  lobbyInfo.textContent = `Iniciando em ${Math.ceil(countdownTimer)}s...`;
+  if (countdownTimer <= 0) startGame();
 }
 
 function updateHudStatic() {
   if (!player) return;
   hudBrawler.textContent = `${player.brawler.name} · ${player.brawler.title}`;
+  updateModeHud();
+  if (hudKills) hudKills.textContent = `KILLS ${getKills(room.myId)}`;
 }
 
 function findDuplicateBrawler(entries, myId) {
@@ -551,7 +761,11 @@ function findDuplicateBrawler(entries, myId) {
 }
 
 room.onRosterChange = (entries, myId) => {
-  const duplicate = !started ? findDuplicateBrawler(entries, myId) : null;
+  rosterEntries = entries;
+  isHost = entries.length > 0 && entries[0].id === myId;
+  entries.forEach(e => ensureStats(e.id, e.name));
+
+  const duplicate = selectedGameMode === 'battle' && !started ? findDuplicateBrawler(entries, myId) : null;
   if (duplicate) {
     setStatus(`${getBrawler(room.myBrawlerId).name} já está escolhido nessa sala. Troca o brawler ou usa outro PIN.`, 'error');
     room.leave();
@@ -580,14 +794,24 @@ room.onRosterChange = (entries, myId) => {
       rp.dispose(scene);
       remotePlayers.delete(id);
       removeNameTag(id);
+      playerStats.delete(id);
     }
   }
 
   hudRosterCount.textContent = entries.length + (entries.length === 1 ? ' jogador' : ' jogadores');
 
-  if (!started) {
+  if (!started && selectedGameMode === 'open') {
     started = true;
+    setStatus('Modo aberto: ranking por kills ativo. Aperte C para trocar personagem.', 'ok');
     startGame();
+  } else if (!started && selectedGameMode === 'battle') {
+    state = 'lobby';
+    lobbyPanel.classList.remove('hidden');
+    startMatchBtn.disabled = !isHost;
+    lobbyInfo.textContent = isHost
+      ? `${entries.length} jogador(es) no lobby. Você é o host: clique em iniciar quando todos estiverem prontos.`
+      : `${entries.length} jogador(es) no lobby. Aguardando o host iniciar.`;
+    setStatus(isHost ? 'Sala criada. Aguarde todo mundo entrar e inicie.' : 'Conectado. Aguardando início da partida.', 'ok');
   }
 };
 
@@ -605,6 +829,9 @@ room.onWorldEvent = payload => {
     world.applyCrateState(payload, ps);
   } else if (payload.type === 'world_reset') {
     world.reset();
+  } else if (payload.type === 'match_start') {
+    selectedGameMode = payload.mode || 'battle';
+    scheduleMatchStart(payload);
   }
 };
 
@@ -612,6 +839,11 @@ room.onCombatEvent = payload => {
   if (payload.type === 'health') {
     const rp = remotePlayers.get(payload.targetId || payload.id);
     if (rp) rp.applyHealth(payload.hp, payload.down);
+  } else if (payload.type === 'kill') {
+    registerKill(payload.killerId, payload.victimId);
+  } else if (payload.type === 'brawler_change') {
+    const rp = remotePlayers.get(payload.targetId || payload.id);
+    if (rp) rp.setBrawler(payload.brawlerId, scene);
   }
 };
 
@@ -929,7 +1161,7 @@ async function attemptJoin() {
   joinBtn.disabled = true;
   setStatus('Conectando...', null);
   try {
-    await room.join(pin, name, selectedBrawlerId);
+    await room.join(pin, name, selectedBrawlerId, selectedGameMode);
     setStatus('Conectado!', 'ok');
     hudPin.textContent = pin;
   } catch (err) {
@@ -944,6 +1176,12 @@ createBtn.addEventListener('click', () => {
   attemptJoin();
 });
 joinBtn.addEventListener('click', () => attemptJoin());
+startMatchBtn.addEventListener('click', () => {
+  if (!isHost || selectedGameMode !== 'battle' || started) return;
+  const startAt = Date.now() + 3000;
+  room.sendWorld({ type: 'match_start', startAt, mode: 'battle' });
+  scheduleMatchStart({ startAt });
+});
 pinInput.addEventListener('keydown', e => {
   if (e.key === 'Enter') attemptJoin();
 });
@@ -952,7 +1190,9 @@ nameInput.addEventListener('keydown', e => {
 });
 
 window.addEventListener('keydown', e => {
-  if (e.key.toLowerCase() === 'r' && state === 'playing') resetArena();
+  const k = e.key.toLowerCase();
+  if (k === 'r' && state === 'playing') resetArena();
+  if (k === 'c' && state === 'playing' && selectedGameMode === 'open') toggleSwitchPanel();
 });
 
 function resetArena() {
@@ -1041,9 +1281,12 @@ function applyRemoteVisibility() {
 }
 
 function updateNameTags() {
+  const crown = selectedGameMode === 'open' ? leaderId() : null;
   if (player) {
     const tag = ensureNameTag('__me');
-    updateNameTag(tag, `${room.myName} · ${player.brawler.name} · ${Math.round(player.hp)}/${player.hpMax}${player.isDown ? ' · CAÍDO' : ''}`, player.hp, player.hpMax, player.isDown);
+    const crownTxt = crown === room.myId ? '👑 ' : '';
+    const killTxt = selectedGameMode === 'open' ? ` · ${getKills(room.myId)}K` : '';
+    updateNameTag(tag, `${crownTxt}${room.myName} · ${player.brawler.name}${killTxt} · ${Math.round(player.hp)}/${player.hpMax}${player.isDown ? ' · CAÍDO' : ''}`, player.hp, player.hpMax, player.isDown);
     positionTag(tag, player.x, player.z);
   }
   for (const [id, rp] of remotePlayers) {
@@ -1051,18 +1294,23 @@ function updateNameTags() {
     const visibleOpacity = remoteVisibilityOpacity(rp);
     tag.style.display = visibleOpacity > 0.01 ? 'block' : 'none';
     if (visibleOpacity <= 0.01) continue;
-    updateNameTag(tag, `${rp.name} · ${rp.brawler.name} · ${Math.round(rp.hp)}/${rp.hpMax}${rp.isDown ? ' · CAÍDO' : ''}`, rp.hp, rp.hpMax, rp.isDown);
+    const crownTxt = crown === id ? '👑 ' : '';
+    const killTxt = selectedGameMode === 'open' ? ` · ${getKills(id)}K` : '';
+    updateNameTag(tag, `${crownTxt}${rp.name} · ${rp.brawler.name}${killTxt} · ${Math.round(rp.hp)}/${rp.hpMax}${rp.isDown ? ' · CAÍDO' : ''}`, rp.hp, rp.hpMax, rp.isDown);
     positionTag(tag, rp.x, rp.z);
   }
 }
 
 function update(dt) {
-  matchElapsed = Math.min(MATCH_DURATION, matchElapsed + dt);
-  toxicVisualTimer -= dt;
-  rebuildToxicVisual(false);
+  if (selectedGameMode === 'battle') {
+    matchElapsed = Math.min(MATCH_DURATION, matchElapsed + dt);
+    toxicVisualTimer -= dt;
+    rebuildToxicVisual(false);
+  }
 
   player.update(dt, input, world);
-  applyToxicDamage(dt);
+  if (selectedGameMode === 'battle') applyToxicDamage(dt);
+  else handleOpenRespawn(dt);
 
   const shiftAiming = input.keys.has('shift');
   const superPressed = input.consumeSuperPress();
@@ -1094,7 +1342,8 @@ function update(dt) {
   if (player.isDown && !lastDownBroadcast) {
     lastDownBroadcast = true;
     broadcastHealth('downed');
-    enterSpectator('foi eliminado');
+    if (selectedGameMode === 'battle') enterSpectator('foi eliminado');
+    else openRespawnTimer = 0;
   }
 
   netSendTimer += dt;
@@ -1110,9 +1359,11 @@ function update(dt) {
   hudSuperBox.classList.toggle('is-ready', player.superCharge >= player.superMax);
   hudHealthFill.style.width = `${Math.max(0, Math.min(100, (player.hp / player.hpMax) * 100))}%`;
   hudHealthText.textContent = player.isDown ? 'ELIMINADO' : `${Math.round(player.hp)} / ${player.hpMax}`;
-  if (hudAlive) hudAlive.textContent = `VIVOS ${aliveCount()}`;
-  if (hudTimer) hudTimer.textContent = formatTime(MATCH_DURATION - matchElapsed);
-  if (hudToxic) hudToxic.textContent = `NÉVOA ${Math.max(0, Math.round((safeRadius() / TOXIC_START_RADIUS) * 100))}%`;
+  if (hudAlive) hudAlive.textContent = selectedGameMode === 'battle' ? `VIVOS ${aliveCount()}` : `ONLINE ${aliveCount()}`;
+  if (hudTimer) hudTimer.textContent = selectedGameMode === 'battle' ? formatTime(MATCH_DURATION - matchElapsed) : 'ABERTO';
+  if (hudToxic) hudToxic.textContent = selectedGameMode === 'battle' ? `NÉVOA ${Math.max(0, Math.round((safeRadius() / TOXIC_START_RADIUS) * 100))}%` : `LÍDER ${leaderId() ? (playerStats.get(leaderId())?.kills || 0) : 0}`;
+  if (hudKills) hudKills.textContent = `KILLS ${getKills(room.myId)}`;
+  if (hudMode) hudMode.textContent = selectedGameMode === 'battle' ? 'BR' : 'ABERTO';
 
   updateNameTags();
 }
@@ -1123,6 +1374,7 @@ function loop(now) {
   last = now;
   dt = Math.min(dt, 1 / 30);
 
+  if (state === 'countdown') updateCountdown();
   if (state === 'playing') update(dt);
 
   updateCamera(dt);

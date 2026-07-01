@@ -13,7 +13,9 @@ export const BRAWLERS = [
     damage: 25,
     attack: 'Rosa azul de média distância',
     super: 'Prisão de correntes em área',
-    portrait: 'assets/portraits/joao-chain-rose.png'
+    portrait: 'assets/portraits/joao-chain-rose.png',
+    concept: 'assets/concepts/joao-chain-rose.png',
+    description: 'Atirador elegante: rosa azul de média distância e correntes que prendem a área.'
   },
   {
     id: 'luan',
@@ -29,7 +31,9 @@ export const BRAWLERS = [
     damage: 15,
     attack: 'Corte de espada em cone',
     super: 'Avanço giratório em área',
-    portrait: 'assets/portraits/luan-blade-dash.png'
+    portrait: 'assets/portraits/luan-blade-dash.png',
+    concept: 'assets/concepts/luan-blade-dash.png',
+    description: 'Duelista de curta distância: espada em cone e avanço giratório agressivo.'
   },
   {
     id: 'djonga',
@@ -45,7 +49,9 @@ export const BRAWLERS = [
     damage: 8,
     attack: 'Sequência de 3 socos',
     super: 'Salto com impacto na aterrissagem',
-    portrait: 'assets/portraits/djonga-combo-strike.png'
+    portrait: 'assets/portraits/djonga-combo-strike.png',
+    concept: 'assets/concepts/djonga-combo-strike.png',
+    description: 'Tanque de pressão: sequência de socos e salto com impacto.'
   },
   {
     id: 'thomas',
@@ -61,7 +67,9 @@ export const BRAWLERS = [
     damage: 6,
     attack: '4 lâminas em leque',
     super: 'Invisibilidade temporária',
-    portrait: 'assets/portraits/thomas-phantom-stealth.png'
+    portrait: 'assets/portraits/thomas-phantom-stealth.png',
+    concept: 'assets/concepts/thomas-phantom-stealth.png',
+    description: 'Assassino furtivo: lâminas em leque e invisibilidade temporária.'
   },
   {
     id: 'gui',
@@ -77,7 +85,9 @@ export const BRAWLERS = [
     damage: 18,
     attack: 'Orbe mágico de longo alcance',
     super: 'Mão mágica de controle',
-    portrait: 'assets/portraits/gui-arcane-control.png'
+    portrait: 'assets/portraits/gui-arcane-control.png',
+    concept: 'assets/concepts/gui-arcane-control.png',
+    description: 'Controlador arcano: orbe que fragmenta e mão mágica que puxa.'
   },
   {
     id: 'lorenzo',
@@ -93,7 +103,9 @@ export const BRAWLERS = [
     damage: 6,
     attack: 'Rajada larga de 9 estilhaços',
     super: 'Torreta de cura em área',
-    portrait: 'assets/portraits/lorenzo-field-support.png'
+    portrait: 'assets/portraits/lorenzo-field-support.png',
+    concept: 'assets/concepts/lorenzo-field-support.png',
+    description: 'Suporte tanque: rajada espalhada e torreta de cura em área.'
   },
   {
     id: 'ministro',
@@ -109,7 +121,9 @@ export const BRAWLERS = [
     damage: 30,
     attack: 'Dardo de longo alcance com efeito contínuo',
     super: 'Frasco lançado em área',
-    portrait: 'assets/portraits/ministro-tactical-elixir.png'
+    portrait: 'assets/portraits/ministro-tactical-elixir.png',
+    concept: 'assets/concepts/ministro-tactical-elixir.png',
+    description: 'Suporte tático: dardos de elixir e frasco explosivo de área.'
   }
 ];
 

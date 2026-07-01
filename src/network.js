@@ -16,6 +16,7 @@ export class Room {
     this.myName = 'Jogador';
     this.mySlot = 0;
     this.myBrawlerId = 'joao';
+    this.myGameMode = 'battle';
     this.joinedAt = Date.now();
 
     this.onPeerState = null;
@@ -26,11 +27,12 @@ export class Room {
     this.onStatus = null;
   }
 
-  join(pin, name, brawlerId = 'joao') {
+  join(pin, name, brawlerId = 'joao', gameMode = 'battle') {
     this.myName = (name || 'Jogador').slice(0, 18);
     this.myBrawlerId = brawlerId || 'joao';
+    this.myGameMode = gameMode || 'battle';
     this.joinedAt = Date.now();
-    const channelName = 'brawl-adapt-room-' + String(pin).trim();
+    const channelName = 'brawl-adapt-room-' + String(pin).trim() + '-' + this.myGameMode;
 
     this.channel = this.client.channel(channelName, {
       config: {
@@ -75,11 +77,7 @@ export class Room {
       this.channel.subscribe(async status => {
         this.onStatus && this.onStatus(status);
         if (status === 'SUBSCRIBED') {
-          await this.channel.track({
-            name: this.myName,
-            brawlerId: this.myBrawlerId,
-            joinedAt: this.joinedAt
-          });
+          await this.track();
           if (!settled) {
             settled = true;
             clearTimeout(timeout);
@@ -96,6 +94,22 @@ export class Room {
     });
   }
 
+  async track(extra = {}) {
+    if (!this.channel) return;
+    await this.channel.track({
+      name: this.myName,
+      brawlerId: this.myBrawlerId,
+      gameMode: this.myGameMode,
+      joinedAt: this.joinedAt,
+      ...extra
+    });
+  }
+
+  setBrawler(brawlerId) {
+    this.myBrawlerId = brawlerId || this.myBrawlerId;
+    this.track();
+  }
+
   _reconcileRoster() {
     const state = this.channel.presenceState();
     const entries = [];
@@ -103,7 +117,13 @@ export class Room {
       const presences = state[key];
       if (!presences || !presences.length) continue;
       const p = presences[0];
-      entries.push({ id: key, name: p.name || 'Jogador', brawlerId: p.brawlerId || 'joao', joinedAt: p.joinedAt || 0 });
+      entries.push({
+        id: key,
+        name: p.name || 'Jogador',
+        brawlerId: p.brawlerId || 'joao',
+        gameMode: p.gameMode || this.myGameMode,
+        joinedAt: p.joinedAt || 0
+      });
     }
     entries.sort((a, b) => a.joinedAt - b.joinedAt || a.id.localeCompare(b.id));
     entries.forEach((e, i) => {
@@ -115,38 +135,22 @@ export class Room {
 
   sendState(state) {
     if (!this.channel) return;
-    this.channel.send({
-      type: 'broadcast',
-      event: 'state',
-      payload: { id: this.myId, ...state }
-    });
+    this.channel.send({ type: 'broadcast', event: 'state', payload: { id: this.myId, ...state } });
   }
 
   sendFire(data) {
     if (!this.channel) return;
-    this.channel.send({
-      type: 'broadcast',
-      event: 'fire',
-      payload: { id: this.myId, ...data }
-    });
+    this.channel.send({ type: 'broadcast', event: 'fire', payload: { id: this.myId, ...data } });
   }
 
   sendWorld(data) {
     if (!this.channel) return;
-    this.channel.send({
-      type: 'broadcast',
-      event: 'world',
-      payload: { id: this.myId, ...data }
-    });
+    this.channel.send({ type: 'broadcast', event: 'world', payload: { id: this.myId, ...data } });
   }
 
   sendCombat(data) {
     if (!this.channel) return;
-    this.channel.send({
-      type: 'broadcast',
-      event: 'combat',
-      payload: { id: this.myId, ...data }
-    });
+    this.channel.send({ type: 'broadcast', event: 'combat', payload: { id: this.myId, ...data } });
   }
 
   leave() {

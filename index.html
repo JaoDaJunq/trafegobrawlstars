@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Brawl Adapt 3D — Fase 11 · Battle Royale</title>
+<title>Brawl Adapt 3D — Fase 12 · Modos e Ranking</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800;900&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
@@ -19,6 +19,8 @@
       <span class="eyebrow" id="hud-alive">VIVOS 1</span>
       <span class="eyebrow" id="hud-timer">05:00</span>
       <span class="eyebrow" id="hud-toxic">NÉVOA 100%</span>
+      <span class="eyebrow" id="hud-kills">KILLS 0</span>
+      <span class="eyebrow" id="hud-mode">MODO</span>
       <span class="eyebrow" id="hud-brawler">Brawler</span>
       <div id="hud-health"><span id="hud-health-fill"></span><b id="hud-health-text">-- / --</b></div>
       <div id="hud-ammo">
@@ -44,8 +46,22 @@
     <div class="menu-card">
       <span class="menu-eyebrow">ADAPT · INTERNO</span>
       <h1>BRAWL ADAPT</h1>
-      <p class="menu-tag">protótipo 3D — fase 11 · battle royale</p>
+      <p class="menu-tag">protótipo 3D — fase 12 · modos, lobby e ranking</p>
 
+
+      <div class="mode-select">
+        <span class="field-label">Escolha o modo</span>
+        <div class="mode-grid">
+          <button id="mode-battle-btn" type="button" class="mode-card is-selected" data-mode="battle">
+            <strong>Battle Royale</strong>
+            <small>Lobby, início sincronizado, 5min, névoa e eliminação.</small>
+          </button>
+          <button id="mode-open-btn" type="button" class="mode-card" data-mode="open">
+            <strong>Aberto por Kills</strong>
+            <small>Entra direto, troca personagem, respawn e coroa no líder.</small>
+          </button>
+        </div>
+      </div>
 
       <div class="brawler-select">
         <span class="field-label">Escolha seu brawler</span>
@@ -65,15 +81,46 @@
           <button id="join-btn" type="button" class="btn-primary">ENTRAR</button>
         </div>
         <p id="room-status" class="room-status"></p>
+        <div id="lobby-panel" class="lobby-panel hidden">
+          <strong>Lobby da sala</strong>
+          <span id="lobby-info">Aguardando jogadores...</span>
+          <button id="start-match-btn" type="button" class="btn-primary">INICIAR PARTIDA</button>
+        </div>
       </div>
 
       <ul class="menu-controls">
         <li><b>WASD</b> mover</li>
         <li><b>MOUSE</b> mirar</li>
         <li><b>CLIQUE</b> atirar</li>
-        <li><b>Q</b> super, quando a barra estiver cheia</li><li><b>SHIFT</b> prévia de alcance</li><li><b>SHIFT+Q</b> prévia da super</li>
+        <li><b>Q</b> super</li><li><b>SHIFT</b> prévia de alcance</li><li><b>C</b> troca brawler no modo aberto</li>
       </ul>
-      <span class="menu-footnote">Combine o mesmo PIN com quem for jogar junto. Agora o mapa é maior, a névoa tóxica fecha em 5 minutos, jogadores mortos viram espectadores e as moitas escondem de verdade.</span>
+      <span class="menu-footnote">Combine o mesmo PIN com quem for jogar junto. No Battle Royale, o host inicia a partida para todos ao mesmo tempo. No modo aberto, vence o ranking de kills e o líder fica com uma coroa.</span>
+    </div>
+  </div>
+
+
+  <div id="brawler-detail" class="modal hidden">
+    <div class="modal-card brawler-detail-card">
+      <button id="brawler-detail-close" class="modal-close" type="button">×</button>
+      <img id="brawler-detail-img" class="brawler-detail-img" src="" alt="">
+      <div class="brawler-detail-copy">
+        <span id="brawler-detail-role" class="menu-eyebrow"></span>
+        <h2 id="brawler-detail-name"></h2>
+        <p id="brawler-detail-title"></p>
+        <div id="brawler-detail-stats" class="brawler-detail-stats"></div>
+        <p id="brawler-detail-attack"></p>
+        <p id="brawler-detail-super"></p>
+        <button id="brawler-detail-confirm" type="button" class="btn-primary">ESCOLHER</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="switch-panel" class="switch-panel hidden">
+    <div class="switch-card-wrap">
+      <strong>TROCAR PERSONAGEM</strong>
+      <small>Modo aberto: escolha outro brawler sem sair da partida.</small>
+      <div id="switch-grid" class="switch-grid"></div>
+      <button id="switch-close" type="button" class="btn-secondary">FECHAR</button>
     </div>
   </div>
 

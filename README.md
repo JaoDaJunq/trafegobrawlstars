@@ -119,3 +119,14 @@ Mudanças desta versão:
 - Em modo espectador, a câmera abre para uma visão maior do mapa.
 - Thomas continua ficando invisível para outros jogadores na Ultimate.
 - Jogadores dentro de moita ficam invisíveis para inimigos fora dela; se estiverem na mesma moita, conseguem se ver.
+
+
+## Fase 12 — Modos, lobby e ranking
+
+- Foram criados dois modos de jogo:
+  - **Battle Royale**: usa lobby, host inicia a partida, início sincronizado, timer de 5 minutos, névoa tóxica e eliminação/espectador.
+  - **Aberto por Kills**: entra direto no mapa, sem névoa/tempo final, com ranking por kills, respawn e coroa no líder.
+- No modo Battle Royale, o canal usa o PIN + modo, então salas de modos diferentes não se misturam.
+- No modo Aberto, aperte **C** para trocar de personagem dentro da partida.
+- A seleção inicial de personagem agora abre uma tela de detalhes com a concept art, stats, ataque e Super antes de confirmar.
+- O HUD ganhou contador de kills, modo atual e destaque do líder no modo aberto.

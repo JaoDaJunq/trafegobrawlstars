@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Brawl Adapt 3D — Fase 4 · Sincronização</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800;900&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="canvas-holder"></div>
+
+  <div id="hud">
+    <div id="hud-top-left">
+      <span class="eyebrow">SALA <span id="hud-pin">----</span></span>
+      <span class="eyebrow" id="hud-roster-count">1 jogador</span>
+      <span class="eyebrow" id="hud-brawler">Brawler</span>
+      <div id="hud-health"><span id="hud-health-fill"></span><b id="hud-health-text">-- / --</b></div>
+      <div id="hud-ammo">
+        <span class="pip filled"></span>
+        <span class="pip filled"></span>
+        <span class="pip filled"></span>
+      </div>
+    </div>
+
+    <div id="hud-super">
+      <span class="hud-super-label">SUPER</span>
+      <div class="hud-super-track">
+        <div id="hud-super-fill"></div>
+      </div>
+    </div>
+
+    <div id="hud-controls">WASD move · mouse mira · clique atira · Q super · Shift mostra alcance · Shift+Q mostra alcance da Super · R reinicia</div>
+  </div>
+
+  <div id="name-tags"></div>
+
+  <div id="menu-overlay">
+    <div class="menu-card">
+      <span class="menu-eyebrow">ADAPT · INTERNO</span>
+      <h1>BRAWL ADAPT</h1>
+      <p class="menu-tag">protótipo 3D — fase 4 · sincronização PvP</p>
+
+
+      <div class="brawler-select">
+        <span class="field-label">Escolha seu brawler</span>
+        <div id="brawler-grid" class="brawler-grid"></div>
+        <p id="brawler-summary" class="brawler-summary"></p>
+      </div>
+
+      <div class="room-form">
+        <label class="field-label" for="name-input">Seu nome</label>
+        <input id="name-input" class="text-input" type="text" maxlength="18" placeholder="Como te chamam?" autocomplete="off">
+
+        <label class="field-label" for="pin-input">PIN da sala</label>
+        <input id="pin-input" class="text-input pin-input" type="text" maxlength="4" placeholder="0000" inputmode="numeric" autocomplete="off">
+
+        <div class="room-buttons">
+          <button id="create-btn" type="button" class="btn-secondary">CRIAR SALA</button>
+          <button id="join-btn" type="button" class="btn-primary">ENTRAR</button>
+        </div>
+        <p id="room-status" class="room-status"></p>
+      </div>
+
+      <ul class="menu-controls">
+        <li><b>WASD</b> mover</li>
+        <li><b>MOUSE</b> mirar</li>
+        <li><b>CLIQUE</b> atirar</li>
+        <li><b>Q</b> super, quando a barra estiver cheia</li><li><b>SHIFT</b> prévia de alcance</li><li><b>SHIFT+Q</b> prévia da super</li>
+      </ul>
+      <span class="menu-footnote">Combine o mesmo PIN com quem for jogar junto. Nesta fase os ataques já causam dano entre jogadores, a vida sincroniza pela rede e as caixas quebradas aparecem para os outros jogadores da sala.</span>
+    </div>
+  </div>
+
+<script src="dist/bundle.js"></script>
+</body>
+</html>

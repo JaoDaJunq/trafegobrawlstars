@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { COLORS, ARENA_W, ARENA_D } from './constants.js';
+import { COLORS, ARENA_W, ARENA_D, SPAWN_POINTS, MATCH_DURATION } from './constants.js';
 import { buildWorld } from './world.js';
 import { Player } from './player.js';
 import { RemotePlayer } from './remotePlayer.js';
@@ -18,6 +18,9 @@ const hudSuperFill = document.getElementById('hud-super-fill');
 const hudPin = document.getElementById('hud-pin');
 const hudRosterCount = document.getElementById('hud-roster-count');
 const hudBrawler = document.getElementById('hud-brawler');
+const hudAlive = document.getElementById('hud-alive');
+const hudTimer = document.getElementById('hud-timer');
+const hudToxic = document.getElementById('hud-toxic');
 const hudHealthFill = document.getElementById('hud-health-fill');
 const hudHealthText = document.getElementById('hud-health-text');
 const menuOverlay = document.getElementById('menu-overlay');
@@ -32,14 +35,17 @@ const brawlerSummary = document.getElementById('brawler-summary');
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(COLORS.sky);
-scene.fog = new THREE.Fog(COLORS.fog, 26, 46);
+scene.fog = new THREE.Fog(COLORS.fog, 70, 135);
 
 const target = new THREE.Vector3(ARENA_W / 2, 0, ARENA_D / 2);
 const ELEV = THREE.MathUtils.degToRad(55);
 const AZ = THREE.MathUtils.degToRad(28);
-const DIST = 24;
+const DIST = 32;
 
-const VIEW_SIZE = 10.8;
+const PLAY_VIEW_SIZE = 16;
+const SPECTATOR_VIEW_SIZE = 48;
+let viewSize = PLAY_VIEW_SIZE;
+let isSpectator = false;
 const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
 camera.position.set(
   target.x + DIST * Math.cos(ELEV) * Math.sin(AZ),
@@ -54,20 +60,38 @@ const cameraOffset = new THREE.Vector3(
   DIST * Math.cos(ELEV) * Math.cos(AZ)
 );
 
+function applyCameraProjection() {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const aspect = w / h;
+  camera.left = -viewSize * aspect;
+  camera.right = viewSize * aspect;
+  camera.top = viewSize;
+  camera.bottom = -viewSize;
+  camera.updateProjectionMatrix();
+}
+
 function updateCamera(dt) {
-  const desired = player
-    ? new THREE.Vector3(
-        clamp(player.x, VIEW_SIZE * 0.7, ARENA_W - VIEW_SIZE * 0.7),
-        0,
-        clamp(player.z, VIEW_SIZE * 0.62, ARENA_D - VIEW_SIZE * 0.62)
-      )
-    : target;
+  const desiredView = isSpectator ? SPECTATOR_VIEW_SIZE : PLAY_VIEW_SIZE;
+  if (Math.abs(viewSize - desiredView) > 0.01) {
+    viewSize += (desiredView - viewSize) * (1 - Math.pow(0.0001, dt));
+    applyCameraProjection();
+  }
+  const desired = isSpectator
+    ? target
+    : player
+      ? new THREE.Vector3(
+          clamp(player.x, viewSize * 0.7, ARENA_W - viewSize * 0.7),
+          0,
+          clamp(player.z, viewSize * 0.62, ARENA_D - viewSize * 0.62)
+        )
+      : target;
   cameraFocus.lerp(desired, 1 - Math.pow(0.00005, dt));
   camera.position.copy(cameraFocus).add(cameraOffset);
   camera.lookAt(cameraFocus);
   if (sun && sun.target) {
     sun.target.position.copy(cameraFocus);
-    sun.position.set(cameraFocus.x + 10, 18, cameraFocus.z + 6);
+    sun.position.set(cameraFocus.x + 12, 22, cameraFocus.z + 8);
   }
 }
 
@@ -79,15 +103,8 @@ renderer.toneMapping = THREE.NoToneMapping;
 canvasHolder.appendChild(renderer.domElement);
 
 function resize() {
-  const w = window.innerWidth;
-  const h = window.innerHeight;
-  const aspect = w / h;
-  camera.left = -VIEW_SIZE * aspect;
-  camera.right = VIEW_SIZE * aspect;
-  camera.top = VIEW_SIZE;
-  camera.bottom = -VIEW_SIZE;
-  camera.updateProjectionMatrix();
-  renderer.setSize(w, h);
+  applyCameraProjection();
+  renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 }
 window.addEventListener('resize', resize);
@@ -101,12 +118,12 @@ sun.position.set(target.x + 10, 18, target.z + 6);
 sun.target.position.copy(target);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
-sun.shadow.camera.left = -28;
-sun.shadow.camera.right = 28;
-sun.shadow.camera.top = 24;
-sun.shadow.camera.bottom = -24;
+sun.shadow.camera.left = -40;
+sun.shadow.camera.right = 40;
+sun.shadow.camera.top = 35;
+sun.shadow.camera.bottom = -35;
 sun.shadow.camera.near = 1;
-sun.shadow.camera.far = 60;
+sun.shadow.camera.far = 90;
 sun.shadow.bias = -0.0015;
 scene.add(sun);
 scene.add(sun.target);
@@ -149,6 +166,14 @@ let state = 'menu';
 let shakeTimer = 0;
 let netSendTimer = 0;
 let started = false;
+let matchElapsed = 0;
+let toxicDamageTimer = 0;
+let toxicVisualTimer = 0;
+let toxicMesh = null;
+let toxicRing = null;
+let lastDownBroadcast = false;
+const TOXIC_START_RADIUS = Math.hypot(ARENA_W, ARENA_D) * 0.62;
+const TOXIC_END_RADIUS = 7.5;
 const NET_SEND_INTERVAL = 0.09;
 
 function setStatus(msg, kind) {
@@ -196,17 +221,7 @@ function updateBrawlerSummary() {
 renderBrawlerCards();
 
 function spawnPointFor(slot) {
-  const points = [
-    { x: 4.0, z: 4.0 },
-    { x: ARENA_W - 4.0, z: ARENA_D - 4.0 },
-    { x: ARENA_W - 4.0, z: 4.0 },
-    { x: 4.0, z: ARENA_D - 4.0 },
-    { x: ARENA_W / 2, z: 4.0 },
-    { x: ARENA_W / 2, z: ARENA_D - 4.0 },
-    { x: 4.0, z: ARENA_D / 2 },
-    { x: ARENA_W - 4.0, z: ARENA_D / 2 }
-  ];
-  return points[slot % points.length];
+  return SPAWN_POINTS[slot % SPAWN_POINTS.length];
 }
 
 function aimTarget(maxRange) {
@@ -285,7 +300,7 @@ function addLinePreview(x, z, angle, range, width, color) {
 }
 
 function showAttackPreview(mode = 'basic') {
-  if (!player || !input.keys.has('shift')) {
+  if (!player || isSpectator || !input.keys.has('shift')) {
     previewGroup.visible = false;
     clearPreview();
     return;
@@ -337,6 +352,105 @@ function showAttackPreview(mode = 'basic') {
   else if (b.id === 'ministro') addLinePreview(x, z, angle, 12.5, 0.5, color);
 }
 
+
+function safeRadius() {
+  const t = Math.max(0, Math.min(1, matchElapsed / MATCH_DURATION));
+  return TOXIC_START_RADIUS + (TOXIC_END_RADIUS - TOXIC_START_RADIUS) * t;
+}
+
+function formatTime(seconds) {
+  const s = Math.max(0, Math.ceil(seconds));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return String(m).padStart(2, '0') + ':' + String(r).padStart(2, '0');
+}
+
+function disposeObject(obj) {
+  if (!obj) return;
+  scene.remove(obj);
+  obj.traverse(child => {
+    if (child.geometry) child.geometry.dispose();
+    if (child.material) child.material.dispose();
+  });
+}
+
+function rebuildToxicVisual(force = false) {
+  if (!force && toxicVisualTimer > 0) return;
+  toxicVisualTimer = 0.18;
+  const r = safeRadius();
+  disposeObject(toxicMesh);
+  disposeObject(toxicRing);
+  const outer = Math.hypot(ARENA_W, ARENA_D) * 0.76;
+  const ringGeo = new THREE.RingGeometry(r, outer, 96, 1);
+  const ringMat = new THREE.MeshBasicMaterial({
+    color: COLORS.toxic,
+    transparent: true,
+    opacity: 0.34,
+    depthWrite: false,
+    side: THREE.DoubleSide
+  });
+  toxicMesh = new THREE.Mesh(ringGeo, ringMat);
+  toxicMesh.rotation.x = -Math.PI / 2;
+  toxicMesh.position.set(ARENA_W / 2, 0.09, ARENA_D / 2);
+  toxicMesh.renderOrder = 700;
+  scene.add(toxicMesh);
+
+  const points = [];
+  for (let i = 0; i < 128; i++) {
+    const a = (i / 128) * Math.PI * 2;
+    points.push(new THREE.Vector3(ARENA_W / 2 + Math.cos(a) * r, 0.115, ARENA_D / 2 + Math.sin(a) * r));
+  }
+  toxicRing = new THREE.LineLoop(
+    new THREE.BufferGeometry().setFromPoints(points),
+    new THREE.LineBasicMaterial({ color: 0x79ff91, transparent: true, opacity: 0.95, depthTest: false })
+  );
+  toxicRing.renderOrder = 710;
+  scene.add(toxicRing);
+}
+
+function isOutsideSafeZone(x, z) {
+  return Math.hypot(x - ARENA_W / 2, z - ARENA_D / 2) > safeRadius();
+}
+
+function aliveCount() {
+  let count = player && !player.isDown ? 1 : 0;
+  for (const rp of remotePlayers.values()) {
+    if (rp.hasData && !rp.isDown) count++;
+  }
+  return count;
+}
+
+function enterSpectator(reason = 'morreu') {
+  if (isSpectator) return;
+  isSpectator = true;
+  clearPreview();
+  if (player) {
+    player.root.visible = false;
+    player.hp = 0;
+    player.isDown = true;
+  }
+  setStatus(`Você ${reason}. Agora está em modo espectador.`, 'error');
+}
+
+function applyToxicDamage(dt) {
+  if (!player || player.isDown) return;
+  if (!isOutsideSafeZone(player.x, player.z)) {
+    toxicDamageTimer = 0;
+    return;
+  }
+  toxicDamageTimer += dt;
+  if (toxicDamageTimer >= 1) {
+    toxicDamageTimer = 0;
+    const t = Math.max(0, Math.min(1, matchElapsed / MATCH_DURATION));
+    const damage = Math.round(7 + t * 11);
+    const result = player.takeDamage(damage);
+    ps.burst({ x: player.x, y: 0.55, z: player.z }, { count: result.downed ? 26 : 10, color: COLORS.toxic, speed: 2.8, life: 0.5, cube: result.downed });
+    shakeTimer = Math.max(shakeTimer, result.downed ? 0.25 : 0.08);
+    broadcastHealth(result.downed ? 'toxic-down' : 'toxic');
+    if (result.downed) enterSpectator('morreu na névoa tóxica');
+  }
+}
+
 function pointSegmentDistance(px, pz, ax, az, bx, bz) {
   const dx = bx - ax;
   const dz = bz - az;
@@ -385,6 +499,7 @@ function applyIncomingDamage(amount, point, event = {}) {
   });
   shakeTimer = Math.max(shakeTimer, result.downed ? 0.26 : 0.1);
   broadcastHealth(result.downed ? 'downed' : 'damage');
+  if (result.downed) enterSpectator('foi eliminado');
 }
 
 function incomingEffectOpts(event, ghost) {
@@ -413,6 +528,12 @@ function startGame() {
   const sp = spawnPointFor(room.mySlot);
   player = new Player(sp.x, sp.z, room.myBrawlerId || selectedBrawlerId, room.mySlot);
   scene.add(player.root);
+  isSpectator = false;
+  matchElapsed = 0;
+  toxicDamageTimer = 0;
+  toxicVisualTimer = 0;
+  lastDownBroadcast = false;
+  rebuildToxicVisual(true);
   state = 'playing';
   menuOverlay.classList.add('hidden');
   updateHudStatic();
@@ -839,6 +960,12 @@ function resetArena() {
   scene.remove(player.root);
   player = new Player(sp.x, sp.z, room.myBrawlerId || selectedBrawlerId, room.mySlot);
   scene.add(player.root);
+  isSpectator = false;
+  matchElapsed = 0;
+  toxicDamageTimer = 0;
+  toxicVisualTimer = 0;
+  lastDownBroadcast = false;
+  rebuildToxicVisual(true);
   for (const p of projectiles) p._removeFrom(scene);
   for (const fx of effects) if (fx.kill) fx.kill();
   projectiles = [];
@@ -899,7 +1026,9 @@ function sameBushAsLocal(rp) {
 }
 
 function remoteVisibilityOpacity(rp) {
-  if (!rp || rp.isDown) return 0.28;
+  if (!rp) return 0;
+  if (isSpectator) return rp.isDown ? 0.28 : 1;
+  if (rp.isDown) return 0.28;
   if (rp.stealth) return 0;
   if (rp.inBush && !sameBushAsLocal(rp)) return 0;
   return 1;
@@ -928,22 +1057,27 @@ function updateNameTags() {
 }
 
 function update(dt) {
+  matchElapsed = Math.min(MATCH_DURATION, matchElapsed + dt);
+  toxicVisualTimer -= dt;
+  rebuildToxicVisual(false);
+
   player.update(dt, input, world);
+  applyToxicDamage(dt);
 
   const shiftAiming = input.keys.has('shift');
   const superPressed = input.consumeSuperPress();
 
-  if (input.firing && !shiftAiming && player.canFire()) {
+  if (!isSpectator && input.firing && !shiftAiming && player.canFire()) {
     player.fire();
     launchBasic();
   }
 
-  if (superPressed && !shiftAiming && player.canSuper()) {
+  if (!isSpectator && superPressed && !shiftAiming && player.canSuper()) {
     launchSuper();
     ps.burst({ x: player.x, y: 0.6, z: player.z }, { count: 22, color: player.brawler.accent, speed: 3.2, life: 0.5 });
   }
 
-  showAttackPreview(shiftAiming && input.keys.has('q') ? 'super' : 'basic');
+  showAttackPreview(!isSpectator && shiftAiming && input.keys.has('q') ? 'super' : 'basic');
 
   for (const p of projectiles) p.update(dt, world, ps, player);
   projectiles = projectiles.filter(p => !p.dead);
@@ -957,6 +1091,12 @@ function update(dt) {
   for (const rp of remotePlayers.values()) rp.update(dt);
   applyRemoteVisibility();
 
+  if (player.isDown && !lastDownBroadcast) {
+    lastDownBroadcast = true;
+    broadcastHealth('downed');
+    enterSpectator('foi eliminado');
+  }
+
   netSendTimer += dt;
   if (netSendTimer >= NET_SEND_INTERVAL) {
     netSendTimer = 0;
@@ -969,7 +1109,10 @@ function update(dt) {
   hudSuperFill.style.width = player.superCharge + '%';
   hudSuperBox.classList.toggle('is-ready', player.superCharge >= player.superMax);
   hudHealthFill.style.width = `${Math.max(0, Math.min(100, (player.hp / player.hpMax) * 100))}%`;
-  hudHealthText.textContent = `${Math.round(player.hp)} / ${player.hpMax}`;
+  hudHealthText.textContent = player.isDown ? 'ELIMINADO' : `${Math.round(player.hp)} / ${player.hpMax}`;
+  if (hudAlive) hudAlive.textContent = `VIVOS ${aliveCount()}`;
+  if (hudTimer) hudTimer.textContent = formatTime(MATCH_DURATION - matchElapsed);
+  if (hudToxic) hudToxic.textContent = `NÉVOA ${Math.max(0, Math.round((safeRadius() / TOXIC_START_RADIUS) * 100))}%`;
 
   updateNameTags();
 }

@@ -146,20 +146,45 @@ export class Crate {
   }
 }
 
+function seededRand(seed) {
+  let s = seed >>> 0;
+  return () => {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    return s / 4294967296;
+  };
+}
+
+function seedFromBush(def) {
+  const str = String(def.id || `${def.x}-${def.z}-${def.w}-${def.d}`);
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
 function buildBush(def, scene) {
   const group = new THREE.Group();
-  const clusters = 5;
+  const rand = seededRand(seedFromBush(def));
+  const clusters = Math.max(7, Math.round((def.w + def.d) * 0.55));
   for (let i = 0; i < clusters; i++) {
-    const r = 0.5 + Math.random() * 0.32;
+    const r = 0.55 + rand() * 0.42;
     const geo = new THREE.SphereGeometry(r, 10, 8);
     const mat = toonMaterial(i % 2 === 0 ? COLORS.bushLeaf : COLORS.bushShade);
     const mesh = new THREE.Mesh(geo, mat);
-    const ox = (Math.random() - 0.5) * def.w * 0.6;
-    const oz = (Math.random() - 0.5) * def.d * 0.6;
-    mesh.position.set(ox, r * 0.62, oz);
+    const ox = (rand() - 0.5) * def.w * 0.78;
+    const oz = (rand() - 0.5) * def.d * 0.78;
+    mesh.position.set(ox, r * 0.58, oz);
     mesh.castShadow = true;
     group.add(withOutline(mesh, 0.065, COLORS.outline));
   }
+  const base = new THREE.Mesh(
+    new THREE.BoxGeometry(def.w, 0.08, def.d),
+    new THREE.MeshBasicMaterial({ color: COLORS.bushShade, transparent: true, opacity: 0.18 })
+  );
+  base.position.y = 0.035;
+  group.add(base);
   group.position.set(def.x, 0, def.z);
   scene.add(group);
   return group;

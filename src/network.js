@@ -29,6 +29,7 @@ export class Room {
   join(pin, name, brawlerId = 'joao') {
     this.myName = (name || 'Jogador').slice(0, 18);
     this.myBrawlerId = brawlerId || 'joao';
+    this.joinedAt = Date.now();
     const channelName = 'brawl-adapt-room-' + String(pin).trim();
 
     this.channel = this.client.channel(channelName, {

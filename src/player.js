@@ -56,14 +56,9 @@ export class Player {
     if (this.rootedTimer > 0) this.rootedTimer -= dt;
 
     if (this.isDown) {
-      this.respawnTimer -= dt;
       this.fireCooldown = Math.max(this.fireCooldown, 0.2);
       this.moving = false;
-      if (this.respawnTimer <= 0) {
-        this.isDown = false;
-        this.hp = this.hpMax;
-        this.invulnTimer = 1.1;
-      }
+      this.stealthTimer = 0;
       this._syncMesh();
       return;
     }
@@ -186,7 +181,7 @@ export class Player {
     if (opts.root) this.root(opts.root);
     if (downed) {
       this.isDown = true;
-      this.respawnTimer = opts.respawnTime || 2.8;
+      this.respawnTimer = 0;
       this.stealthTimer = 0;
       this.rootedTimer = 0;
     }

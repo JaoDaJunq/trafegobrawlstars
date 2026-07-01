@@ -3,602 +3,332 @@ import { toonMaterial, withOutline } from './toon.js';
 import { COLORS } from './constants.js';
 import { getBrawler } from './brawlers.js';
 
-export const BODY_HEIGHT = 0.76;
-export const GUN_TIP_LOCAL = new THREE.Vector3(0, 0.08, 1.08);
-export const PLAYER_RADIUS = 0.5;
+export const BODY_HEIGHT = 0.9;
+export const GUN_TIP_LOCAL = new THREE.Vector3(0, 0.06, 1.22);
+export const PLAYER_RADIUS = 0.58;
 
 const VISUALS = {
   joao: {
-    bodyType: 'slim',
-    skin: 0xd8aa8d,
-    hair: 0x1b1717,
-    hairStyle: 'messy',
-    shirt: 0xf4f0ec,
-    jacket: 0x7b2237,
-    sleeve: 0xead8bf,
-    pants: 0x171a22,
-    shoe: 0xf3eee8,
-    shoeAccent: 0x7b2237,
-    glasses: true,
-    facialHair: true,
-    necklace: true,
-    emblem: 0x4ab9ff,
-    weapon: 'blueRose'
+    scale: [0.9, 1.06, 0.9], skin: 0xd8aa8d, hair: 0x171214, hairLight: 0x3a2925,
+    shirt: 0xf4f0ec, jacket: 0x7b2237, sleeve: 0xead8bf, pants: 0x171a22,
+    shoe: 0xf3eee8, shoeAccent: 0x7b2237, accent: 0x48b6ff,
+    style: 'joao', weapon: 'rose'
   },
   luan: {
-    bodyType: 'athletic',
-    skin: 0xd7a17f,
-    hair: 0x181313,
-    hairStyle: 'fade',
-    shirt: 0x101115,
-    jacket: 0x101115,
-    sleeve: 0xd7a17f,
-    pants: 0x111318,
-    shoe: 0x15161b,
-    shoeAccent: 0xb63232,
-    facialHair: true,
-    necklace: true,
-    watch: true,
-    beltChain: true,
-    emblem: 0xd93732,
-    weapon: 'emberSword'
+    scale: [1.18, 1.08, 1.08], skin: 0xd7a17f, hair: 0x171212, hairLight: 0x3a211d,
+    shirt: 0x0d0e12, jacket: 0x0d0e12, sleeve: 0xd7a17f, pants: 0x0e1015,
+    shoe: 0x121217, shoeAccent: 0xe5484d, accent: 0xe5484d,
+    style: 'luan', weapon: 'sword'
   },
   djonga: {
-    bodyType: 'fighter',
-    skin: 0xc98761,
-    hair: 0x201711,
-    hairStyle: 'short',
-    shirt: null,
-    jacket: null,
-    sleeve: 0xc98761,
-    pants: 0x15151a,
-    shoe: 0xc98761,
-    shoeAccent: 0xd62d2d,
-    facialHair: false,
-    necklace: true,
-    glove: true,
-    wraps: true,
-    emblem: 0xd62d2d,
-    weapon: 'fists'
+    scale: [1.12, 1.02, 1.0], skin: 0xc98761, hair: 0x17100c, hairLight: 0x3a2418,
+    shirt: null, jacket: null, sleeve: 0xc98761, pants: 0x16161b,
+    shoe: 0xc98761, shoeAccent: 0xe5484d, accent: 0xe5484d,
+    style: 'djonga', weapon: 'fists'
   },
   thomas: {
-    bodyType: 'slim',
-    skin: 0xe1b08e,
-    hair: 0x9b7a56,
-    hairLight: 0xd2bd9c,
-    hairStyle: 'fringe',
-    shirt: 0x0f2446,
-    jacket: 0x0f2446,
-    sleeve: 0xe1b08e,
-    pants: 0x101724,
-    shoe: 0x0d1a33,
-    shoeAccent: 0x7ddcff,
-    earring: true,
-    necklace: true,
-    emblem: 0x74d8ff,
-    weapon: 'shadowBlades'
+    scale: [0.86, 1.12, 0.88], skin: 0xe1b08e, hair: 0x8b7458, hairLight: 0xd6c39d,
+    shirt: 0x0f2446, jacket: 0x0f2446, sleeve: 0xe1b08e, pants: 0x0c1320,
+    shoe: 0x0c172d, shoeAccent: 0x74d8ff, accent: 0x74d8ff,
+    style: 'thomas', weapon: 'blades'
   },
   gui: {
-    bodyType: 'athletic',
-    skin: 0xd8aa8d,
-    hair: 0x241b18,
-    hairLight: 0x6f5a46,
-    hairStyle: 'voluminous',
-    shirt: 0x141419,
-    jacket: 0x141419,
-    sleeve: 0xd8aa8d,
-    pants: 0x15151d,
-    shoe: 0x10111a,
-    shoeAccent: 0x9b5cff,
-    glasses: true,
-    facialHair: true,
-    necklace: true,
-    arcaneSash: true,
-    wristBands: 0x4e2a72,
-    emblem: 0x9b5cff,
-    emblemShape: 'eye',
-    weapon: 'arcaneOrb'
+    scale: [1.08, 1.13, 1.0], skin: 0xd8aa8d, hair: 0x241b18, hairLight: 0x6f5a46,
+    shirt: 0x141419, jacket: 0x141419, sleeve: 0xd8aa8d, pants: 0x15151d,
+    shoe: 0x10111a, shoeAccent: 0x9b5cff, accent: 0x9b5cff,
+    style: 'gui', weapon: 'orb'
   },
   lorenzo: {
-    bodyType: 'slim',
-    skin: 0xd9ad8e,
-    hair: 0x7a654f,
-    hairLight: 0xc9b48b,
-    hairStyle: 'softFringe',
-    shirt: 0x0b0d11,
-    jacket: 0x0b0d11,
-    sleeve: 0x0b0d11,
-    pants: 0x12151b,
-    shoe: 0x0d1116,
-    shoeAccent: 0x00d7c7,
-    necklace: true,
-    airpods: true,
-    supportRig: true,
-    cargoPockets: true,
-    emblem: 0x00d7c7,
-    emblemShape: 'cross',
-    weapon: 'medCannon'
+    scale: [1.05, 1.05, 1.14], skin: 0xd9ad8e, hair: 0x7a654f, hairLight: 0xc9b48b,
+    shirt: 0x0b0d11, jacket: 0x0b0d11, sleeve: 0x0b0d11, pants: 0x12151b,
+    shoe: 0x0d1116, shoeAccent: 0x00d7c7, accent: 0x00d7c7,
+    style: 'lorenzo', weapon: 'cannon'
   },
   ministro: {
-    bodyType: 'slim',
-    skin: 0xd4a587,
-    hair: 0x1b1412,
-    hairLight: 0x3b2a22,
-    hairStyle: 'curly',
-    shirt: 0x0d0f12,
-    jacket: 0x14191f,
-    sleeve: 0x14191f,
-    pants: 0x15171c,
-    shoe: 0xf0e7d8,
-    shoeAccent: 0x0b5b45,
-    facialHair: true,
-    necklace: true,
-    puffer: true,
-    flaskBelt: true,
-    emblem: 0x39d98a,
-    emblemShape: 'elixir',
-    weapon: 'elixirDart'
-  },
-  default: {
-    bodyType: 'base',
-    skin: 0xd7a17f,
-    hair: 0x171717,
-    hairStyle: 'cap',
-    shirt: 0xffffff,
-    jacket: 0x22e0c2,
-    sleeve: 0xd7a17f,
-    pants: 0x202736,
-    shoe: 0x232936,
-    shoeAccent: 0xffffff,
-    facialHair: false,
-    necklace: false,
-    emblem: 0xf4b740,
-    weapon: 'default'
+    scale: [0.98, 1.18, 1.03], skin: 0xd4a587, hair: 0x1b1412, hairLight: 0x4b3427,
+    shirt: 0x0d0f12, jacket: 0x14191f, sleeve: 0x14191f, pants: 0x15171c,
+    shoe: 0xf0e7d8, shoeAccent: 0x0b5b45, accent: 0x39d98a,
+    style: 'ministro', weapon: 'dart'
   }
 };
 
+function v3(x, y, z) { return new THREE.Vector3(x, y, z); }
 
-const SPRITE_TEX_CACHE = new Map();
-const SPRITE_SCALE = {
-  joao: { h: 2.06, y: 1.05, x: 1.0, z: 0.02 },
-  luan: { h: 2.02, y: 1.03, x: 1.0, z: 0.02 },
-  djonga: { h: 1.96, y: 1.0, x: 1.0, z: 0.02 },
-  thomas: { h: 2.03, y: 1.03, x: 1.0, z: 0.02 },
-  gui: { h: 2.05, y: 1.04, x: 1.0, z: 0.02 },
-  lorenzo: { h: 2.08, y: 1.05, x: 1.0, z: 0.02 },
-  ministro: { h: 2.04, y: 1.04, x: 1.0, z: 0.02 }
-};
-
-function getSpriteTexture(path) {
-  if (!path) return null;
-  if (SPRITE_TEX_CACHE.has(path)) return SPRITE_TEX_CACHE.get(path);
-  const tex = new THREE.TextureLoader().load(path);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.generateMipmaps = true;
-  SPRITE_TEX_CACHE.set(path, tex);
-  return tex;
+function addOutlined(group, mesh, outline = 0.04) {
+  mesh.castShadow = true;
+  group.add(withOutline(mesh, outline, COLORS.outline));
+  return mesh;
 }
 
-function addConceptSprite(root, brawler) {
-  if (!brawler.sprite) return null;
-  const tex = getSpriteTexture(brawler.sprite);
-  if (!tex) return null;
-  const mat = new THREE.SpriteMaterial({
-    map: tex,
-    transparent: true,
-    alphaTest: 0.025,
-    depthWrite: false,
-    depthTest: true
-  });
-  const sprite = new THREE.Sprite(mat);
-  sprite.userData.isConceptSprite = true;
-  const cfg = SPRITE_SCALE[brawler.id] || { h: 2.02, y: 1.03, x: 1, z: 0.02 };
-  const aspect = 0.54; // initial value until the texture loads
-  sprite.scale.set(cfg.h * aspect * cfg.x, cfg.h, 1);
-  sprite.position.set(0, cfg.y, cfg.z);
-  sprite.renderOrder = 8;
-  tex.addEventListener?.('update', () => {
-    const img = tex.image;
-    if (img && img.width && img.height) {
-      sprite.scale.x = cfg.h * (img.width / img.height) * cfg.x;
-    }
-  });
-  root.add(sprite);
-  return sprite;
-}
-
-function softenPrimitiveMeshForConcept(root, conceptSprite) {
-  if (!conceptSprite) return;
-  root.traverse(obj => {
-    if (obj.isMesh && obj.material && obj !== conceptSprite) {
-      obj.material.transparent = true;
-      obj.material.opacity = Math.min(obj.material.opacity ?? 1, 0.55);
-    }
-  });
-}
-
-function visualFor(brawler) {
-  return VISUALS[brawler.id] || {
-    ...VISUALS.default,
-    jacket: brawler.color,
-    emblem: brawler.accent
-  };
-}
-
-function addBox(group, size, pos, color, outline = 0.045, opts = {}) {
+function box(group, size, pos, color, opts = {}) {
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(size.x, size.y, size.z), toonMaterial(color));
   mesh.position.copy(pos);
+  if (opts.rot) mesh.rotation.set(opts.rot.x || 0, opts.rot.y || 0, opts.rot.z || 0);
   if (opts.scale) mesh.scale.copy(opts.scale);
-  if (opts.rotation) mesh.rotation.set(opts.rotation.x || 0, opts.rotation.y || 0, opts.rotation.z || 0);
-  mesh.castShadow = true;
-  mesh.receiveShadow = !!opts.receiveShadow;
-  group.add(withOutline(mesh, outline, COLORS.outline));
-  return mesh;
+  return addOutlined(group, mesh, opts.outline ?? 0.04);
 }
 
-function addSphere(group, radius, pos, color, scale = new THREE.Vector3(1, 1, 1), outline = 0.045, opts = {}) {
-  const mesh = new THREE.Mesh(new THREE.SphereGeometry(radius, opts.w || 16, opts.h || 10), toonMaterial(color));
+function sphere(group, radius, pos, color, scale = v3(1, 1, 1), opts = {}) {
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(radius, opts.w || 18, opts.h || 12), toonMaterial(color));
   mesh.position.copy(pos);
   mesh.scale.copy(scale);
-  if (opts.rotation) mesh.rotation.set(opts.rotation.x || 0, opts.rotation.y || 0, opts.rotation.z || 0);
-  mesh.castShadow = true;
-  group.add(withOutline(mesh, outline, COLORS.outline));
-  return mesh;
+  if (opts.rot) mesh.rotation.set(opts.rot.x || 0, opts.rot.y || 0, opts.rot.z || 0);
+  return addOutlined(group, mesh, opts.outline ?? 0.04);
 }
 
-function addCylinder(group, radiusTop, radiusBottom, height, pos, color, outline = 0.04, opts = {}) {
-  const mesh = new THREE.Mesh(new THREE.CylinderGeometry(radiusTop, radiusBottom, height, opts.radial || 16), toonMaterial(color));
+function cyl(group, rt, rb, h, pos, color, opts = {}) {
+  const mesh = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, opts.radial || 16), toonMaterial(color));
   mesh.position.copy(pos);
+  if (opts.rot) mesh.rotation.set(opts.rot.x || 0, opts.rot.y || 0, opts.rot.z || 0);
   if (opts.scale) mesh.scale.copy(opts.scale);
-  if (opts.rotation) mesh.rotation.set(opts.rotation.x || 0, opts.rotation.y || 0, opts.rotation.z || 0);
-  mesh.castShadow = true;
-  group.add(withOutline(mesh, outline, COLORS.outline));
-  return mesh;
+  return addOutlined(group, mesh, opts.outline ?? 0.035);
 }
 
-function addPlainBox(group, size, pos, color, opts = {}) {
+function plainBox(group, size, pos, color, opts = {}) {
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(size.x, size.y, size.z), new THREE.MeshBasicMaterial({ color }));
   mesh.position.copy(pos);
-  if (opts.rotation) mesh.rotation.set(opts.rotation.x || 0, opts.rotation.y || 0, opts.rotation.z || 0);
+  if (opts.rot) mesh.rotation.set(opts.rot.x || 0, opts.rot.y || 0, opts.rot.z || 0);
   group.add(mesh);
   return mesh;
 }
 
-function addPlainCircle(group, radius, pos, color, opts = {}) {
-  const mesh = new THREE.Mesh(new THREE.CircleGeometry(radius, opts.segments || 14), new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide }));
+function plainCircle(group, r, pos, color, opts = {}) {
+  const mesh = new THREE.Mesh(new THREE.CircleGeometry(r, opts.segments || 16), new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide }));
   mesh.position.copy(pos);
-  if (opts.rotation) mesh.rotation.set(opts.rotation.x || 0, opts.rotation.y || 0, opts.rotation.z || 0);
+  if (opts.rot) mesh.rotation.set(opts.rot.x || 0, opts.rot.y || 0, opts.rot.z || 0);
   group.add(mesh);
   return mesh;
 }
 
-function addTorso(group, v) {
-  const width = v.bodyType === 'fighter' ? 0.62 : v.bodyType === 'athletic' ? 0.58 : 0.5;
-  const height = v.bodyType === 'fighter' ? 0.52 : 0.56;
-  const depth = v.bodyType === 'fighter' ? 0.36 : 0.34;
-
-  if (v.shirt === null) {
-    addSphere(group, 0.34, new THREE.Vector3(0, 0.08, 0), v.skin, new THREE.Vector3(1.04, 1.1, 0.82), 0.052);
-    addPlainBox(group, new THREE.Vector3(0.12, 0.02, 0.018), new THREE.Vector3(-0.12, 0.19, 0.28), 0x7b4d38);
-    addPlainBox(group, new THREE.Vector3(0.12, 0.02, 0.018), new THREE.Vector3(0.12, 0.19, 0.28), 0x7b4d38);
-    return;
-  }
-
-  addBox(group, new THREE.Vector3(width, height, depth), new THREE.Vector3(0, 0.05, 0), v.jacket, 0.055);
-  addBox(group, new THREE.Vector3(width * 0.62, height * 0.72, depth + 0.035), new THREE.Vector3(0, 0.02, 0.04), v.shirt, 0.035);
-
-  if (v.jacket !== v.shirt) {
-    addBox(group, new THREE.Vector3(0.09, height * 0.78, depth + 0.055), new THREE.Vector3(-width * 0.33, 0.04, 0.055), v.jacket, 0.035);
-    addBox(group, new THREE.Vector3(0.09, height * 0.78, depth + 0.055), new THREE.Vector3(width * 0.33, 0.04, 0.055), v.jacket, 0.035);
-  }
-
-  if (v.puffer) {
-    for (let i = 0; i < 4; i++) {
-      addPlainBox(group, new THREE.Vector3(width * 0.92, 0.018, depth + 0.06), new THREE.Vector3(0, -0.15 + i * 0.12, 0.095), 0x25303a);
-    }
-    addBox(group, new THREE.Vector3(width * 0.55, 0.12, 0.12), new THREE.Vector3(0, 0.38, -0.02), 0x242a32, 0.03);
-  }
-
-  if (v.arcaneSash) {
-    addBox(group, new THREE.Vector3(0.12, height * 1.08, depth + 0.075), new THREE.Vector3(-0.12, 0.02, 0.09), 0x4e2a72, 0.03, { rotation: { z: -0.42 } });
-    addPlainBox(group, new THREE.Vector3(0.08, 0.08, 0.035), new THREE.Vector3(0.04, -0.26, 0.23), 0xd4a04d);
-  }
-
-  if (v.supportRig) {
-    addBox(group, new THREE.Vector3(0.055, height * 1.05, depth + 0.09), new THREE.Vector3(-width * 0.33, 0.02, 0.1), 0x303640, 0.02);
-    addBox(group, new THREE.Vector3(0.055, height * 1.05, depth + 0.09), new THREE.Vector3(width * 0.33, 0.02, 0.1), 0x303640, 0.02);
-    addPlainBox(group, new THREE.Vector3(0.13, 0.13, 0.035), new THREE.Vector3(0.24, 0.05, 0.235), v.emblem);
-  }
+function addEyes(group, y = 0.68, color = 0x101010) {
+  plainCircle(group, 0.033, v3(-0.082, y, 0.272), color, { rot: { y: Math.PI } });
+  plainCircle(group, 0.033, v3(0.082, y, 0.272), color, { rot: { y: Math.PI } });
 }
 
 function addHead(group, v) {
-  addSphere(group, 0.27, new THREE.Vector3(0, 0.54, 0.02), v.skin, new THREE.Vector3(0.92, 1.05, 0.9), 0.052);
-  addPlainCircle(group, 0.035, new THREE.Vector3(-0.085, 0.57, 0.255), 0x141414, { rotation: { y: Math.PI } });
-  addPlainCircle(group, 0.035, new THREE.Vector3(0.085, 0.57, 0.255), 0x141414, { rotation: { y: Math.PI } });
-  addPlainBox(group, new THREE.Vector3(0.09, 0.018, 0.012), new THREE.Vector3(0, 0.455, 0.264), v.facialHair ? 0x44251e : 0xb05f5f);
-
-  if (v.facialHair) {
-    addPlainBox(group, new THREE.Vector3(0.14, 0.022, 0.012), new THREE.Vector3(0, 0.515, 0.268), 0x2a1815);
-    addPlainBox(group, new THREE.Vector3(0.08, 0.04, 0.012), new THREE.Vector3(0, 0.41, 0.266), 0x2a1815);
+  sphere(group, 0.28, v3(0, 0.66, 0.02), v.skin, v3(0.92, 1.05, 0.88), { outline: 0.05 });
+  addEyes(group, 0.69);
+  if (v.style === 'joao' || v.style === 'gui') {
+    for (const x of [-0.085, 0.085]) box(group, v3(0.13, 0.05, 0.018), v3(x, 0.69, 0.29), 0x111111, { outline: 0.012 });
+    plainBox(group, v3(0.055, 0.018, 0.018), v3(0, 0.69, 0.293), 0x111111);
   }
-
-  if (v.glasses) addGlasses(group);
-  if (v.earring) addPlainCircle(group, 0.025, new THREE.Vector3(-0.245, 0.54, 0.06), 0xcfe7ff, { rotation: { y: Math.PI / 2 } });
-}
-
-function addGlasses(group) {
-  const mat = 0x11151d;
-  addPlainBox(group, new THREE.Vector3(0.11, 0.012, 0.014), new THREE.Vector3(-0.085, 0.575, 0.276), mat);
-  addPlainBox(group, new THREE.Vector3(0.11, 0.012, 0.014), new THREE.Vector3(0.085, 0.575, 0.276), mat);
-  addPlainBox(group, new THREE.Vector3(0.012, 0.065, 0.014), new THREE.Vector3(-0.14, 0.575, 0.276), mat);
-  addPlainBox(group, new THREE.Vector3(0.012, 0.065, 0.014), new THREE.Vector3(-0.03, 0.575, 0.276), mat);
-  addPlainBox(group, new THREE.Vector3(0.012, 0.065, 0.014), new THREE.Vector3(0.03, 0.575, 0.276), mat);
-  addPlainBox(group, new THREE.Vector3(0.012, 0.065, 0.014), new THREE.Vector3(0.14, 0.575, 0.276), mat);
-  addPlainBox(group, new THREE.Vector3(0.06, 0.012, 0.014), new THREE.Vector3(0, 0.575, 0.276), mat);
+  if (v.style === 'thomas') sphere(group, 0.032, v3(0.255, 0.67, 0.02), 0xcde9ff, v3(0.65, 1, 0.65), { outline: 0.012 });
+  if (v.style === 'lorenzo') {
+    sphere(group, 0.035, v3(-0.255, 0.67, 0.02), 0xffffff, v3(0.65, 1, 0.65), { outline: 0.012 });
+    sphere(group, 0.035, v3(0.255, 0.67, 0.02), 0xffffff, v3(0.65, 1, 0.65), { outline: 0.012 });
+  }
+  if (v.style === 'joao' || v.style === 'luan' || v.style === 'gui' || v.style === 'ministro') {
+    plainBox(group, v3(0.1, 0.025, 0.018), v3(0, 0.56, 0.292), 0x2c1d19);
+    plainBox(group, v3(0.12, 0.022, 0.018), v3(0, 0.49, 0.275), 0x2c1d19);
+  }
 }
 
 function addHair(group, v) {
-  const c = v.hair;
-  const light = v.hairLight || c;
-  if (v.hairStyle === 'messy') {
-    addSphere(group, 0.24, new THREE.Vector3(0, 0.76, 0.02), c, new THREE.Vector3(1.08, 0.48, 0.95), 0.04);
-    const clumps = [
-      [-0.16, 0.71, 0.16, 0.11], [-0.06, 0.75, 0.20, 0.13], [0.08, 0.73, 0.19, 0.12],
-      [0.18, 0.68, 0.12, 0.1], [-0.18, 0.66, -0.02, 0.1], [0.16, 0.68, -0.04, 0.1]
-    ];
-    for (const [x, y, z, r] of clumps) addSphere(group, r, new THREE.Vector3(x, y, z), c, new THREE.Vector3(1.2, 0.7, 0.9), 0.035);
-    return;
-  }
-
-  if (v.hairStyle === 'fade') {
-    addSphere(group, 0.22, new THREE.Vector3(0, 0.73, 0.01), c, new THREE.Vector3(0.96, 0.42, 0.82), 0.035);
-    addSphere(group, 0.12, new THREE.Vector3(-0.08, 0.73, 0.18), c, new THREE.Vector3(1.3, 0.55, 0.8), 0.032);
-    addSphere(group, 0.11, new THREE.Vector3(0.07, 0.75, 0.17), c, new THREE.Vector3(1.35, 0.55, 0.8), 0.032);
-    return;
-  }
-
-  if (v.hairStyle === 'fringe') {
-    addSphere(group, 0.23, new THREE.Vector3(0, 0.73, 0), c, new THREE.Vector3(1, 0.42, 0.84), 0.035);
-    addSphere(group, 0.13, new THREE.Vector3(-0.11, 0.69, 0.18), light, new THREE.Vector3(1.1, 0.55, 0.9), 0.03);
-    addSphere(group, 0.12, new THREE.Vector3(0.02, 0.68, 0.2), light, new THREE.Vector3(1.25, 0.55, 0.9), 0.03);
-    addSphere(group, 0.1, new THREE.Vector3(0.13, 0.69, 0.15), c, new THREE.Vector3(1.1, 0.55, 0.85), 0.03);
-    return;
-  }
-
-  if (v.hairStyle === 'voluminous') {
-    addSphere(group, 0.24, new THREE.Vector3(0, 0.75, 0.01), c, new THREE.Vector3(1.02, 0.48, 0.88), 0.036);
-    for (const [x, y, z, r, col] of [
-      [-0.16, 0.74, 0.13, 0.1, c], [-0.05, 0.79, 0.16, 0.12, light], [0.09, 0.78, 0.14, 0.11, c],
-      [0.18, 0.72, 0.08, 0.09, c], [-0.18, 0.70, -0.02, 0.09, c], [0.12, 0.76, -0.05, 0.1, light]
-    ]) addSphere(group, r, new THREE.Vector3(x, y, z), col, new THREE.Vector3(1.15, 0.62, 0.85), 0.028);
-    return;
-  }
-
-  if (v.hairStyle === 'softFringe') {
-    addSphere(group, 0.23, new THREE.Vector3(0, 0.72, 0), c, new THREE.Vector3(1.03, 0.38, 0.83), 0.034);
-    addSphere(group, 0.14, new THREE.Vector3(-0.1, 0.68, 0.17), light, new THREE.Vector3(1.15, 0.52, 0.9), 0.028);
-    addSphere(group, 0.13, new THREE.Vector3(0.04, 0.67, 0.19), light, new THREE.Vector3(1.25, 0.5, 0.9), 0.028);
-    addSphere(group, 0.11, new THREE.Vector3(0.16, 0.69, 0.13), c, new THREE.Vector3(1.1, 0.5, 0.86), 0.028);
-    return;
-  }
-
-  if (v.hairStyle === 'curly') {
-    addSphere(group, 0.22, new THREE.Vector3(0, 0.73, 0), c, new THREE.Vector3(1.02, 0.44, 0.9), 0.032);
-    const curls = [
-      [-0.2,0.69,0.1],[-0.15,0.76,0.14],[-0.05,0.79,0.17],[0.08,0.78,0.16],[0.18,0.72,0.1],
-      [-0.23,0.62,0.02],[0.23,0.64,0.02],[-0.15,0.73,-0.1],[0.13,0.75,-0.08]
-    ];
-    for (let i = 0; i < curls.length; i++) {
-      const [x, y, z] = curls[i];
-      addSphere(group, 0.075, new THREE.Vector3(x, y, z), i % 3 === 0 ? light : c, new THREE.Vector3(1, 0.82, 1), 0.024);
+  const baseY = 0.88;
+  const color = v.hair;
+  if (v.style === 'ministro') {
+    for (let i = 0; i < 14; i++) {
+      const a = (i / 14) * Math.PI * 2;
+      const r = 0.2 + (i % 2) * 0.05;
+      sphere(group, 0.095, v3(Math.cos(a) * r, baseY + Math.sin(i) * 0.025, Math.sin(a) * 0.15), i % 2 ? v.hairLight : color, v3(1.05, 1, 1.05), { outline: 0.026, w: 10, h: 8 });
     }
+    sphere(group, 0.19, v3(0, baseY + 0.035, -0.02), color, v3(1.25, 0.78, 1.1), { outline: 0.035 });
     return;
   }
+  sphere(group, 0.22, v3(0, baseY, -0.02), color, v3(1.25, 0.72, 1.05), { outline: 0.035 });
+  const tufts = v.style === 'thomas' || v.style === 'lorenzo' ? 9 : v.style === 'gui' ? 12 : 8;
+  for (let i = 0; i < tufts; i++) {
+    const x = -0.2 + (i / Math.max(1, tufts - 1)) * 0.4;
+    const y = baseY + 0.04 + Math.sin(i * 1.7) * 0.05;
+    const z = 0.07 + Math.cos(i * 0.8) * 0.05;
+    const c = i % 3 === 0 && v.hairLight ? v.hairLight : color;
+    sphere(group, 0.085, v3(x, y, z), c, v3(1.25, 0.62, 0.9), { outline: 0.025, w: 10, h: 7, rot: { z: x * 2.5 } });
+  }
+}
 
-  if (v.hairStyle === 'short') {
-    addSphere(group, 0.22, new THREE.Vector3(0, 0.72, 0.01), c, new THREE.Vector3(0.95, 0.34, 0.78), 0.032);
-    addSphere(group, 0.08, new THREE.Vector3(0.1, 0.73, 0.14), c, new THREE.Vector3(1.3, 0.55, 0.85), 0.028);
+function addTorso(group, v) {
+  if (v.style === 'djonga') {
+    sphere(group, 0.38, v3(0, 0.16, 0.02), v.skin, v3(1.02, 1.22, 0.8), { outline: 0.055 });
+    plainBox(group, v3(0.12, 0.02, 0.02), v3(-0.11, 0.28, 0.31), 0x7b4d38);
+    plainBox(group, v3(0.12, 0.02, 0.02), v3(0.11, 0.28, 0.31), 0x7b4d38);
     return;
   }
+  const wide = v.style === 'luan' ? 0.68 : v.style === 'lorenzo' || v.style === 'ministro' ? 0.62 : 0.54;
+  const depth = v.style === 'lorenzo' || v.style === 'ministro' ? 0.44 : 0.36;
+  box(group, v3(wide, 0.6, depth), v3(0, 0.14, 0), v.jacket, { outline: 0.055 });
+  box(group, v3(wide * 0.58, 0.45, depth + 0.03), v3(0, 0.11, 0.045), v.shirt, { outline: 0.035 });
 
-  addSphere(group, 0.22, new THREE.Vector3(0, 0.72, 0.01), c, new THREE.Vector3(0.95, 0.36, 0.8), 0.035);
+  if (v.style === 'joao') {
+    box(group, v3(0.14, 0.5, depth + 0.05), v3(-wide * 0.35, 0.14, 0.06), v.sleeve, { outline: 0.035 });
+    box(group, v3(0.14, 0.5, depth + 0.05), v3(wide * 0.35, 0.14, 0.06), v.sleeve, { outline: 0.035 });
+    box(group, v3(0.46, 0.16, 0.22), v3(0, 0.46, -0.04), 0xf4f0ec, { outline: 0.03 });
+  }
+  if (v.style === 'ministro') {
+    for (let i = 0; i < 5; i++) plainBox(group, v3(wide * 0.9, 0.02, depth + 0.08), v3(0, -0.12 + i * 0.12, 0.12), 0x28323d);
+    box(group, v3(0.44, 0.16, 0.22), v3(0, 0.48, -0.02), 0x242a32, { outline: 0.03 });
+  }
+  if (v.style === 'gui') {
+    box(group, v3(0.13, 0.76, depth + 0.08), v3(-0.12, 0.12, 0.09), 0x4e2a72, { outline: 0.03, rot: { z: -0.45 } });
+    plainCircle(group, 0.08, v3(0.18, 0.17, 0.28), v.accent, { rot: { y: Math.PI }, segments: 18 });
+  }
+  if (v.style === 'lorenzo') {
+    box(group, v3(0.11, 0.65, depth + 0.16), v3(-wide * 0.42, 0.12, 0.12), 0x303640, { outline: 0.025 });
+    box(group, v3(0.11, 0.65, depth + 0.16), v3(wide * 0.42, 0.12, 0.12), 0x303640, { outline: 0.025 });
+    plainBox(group, v3(0.13, 0.13, 0.035), v3(0.25, 0.12, 0.3), v.accent);
+  }
+  if (v.style === 'luan') {
+    plainBox(group, v3(0.17, 0.09, 0.03), v3(0.2, 0.2, 0.27), v.accent);
+    plainBox(group, v3(0.09, 0.25, 0.03), v3(-0.2, 0.14, 0.27), v.accent);
+  }
 }
 
 function addArms(group, v) {
-  const armY = 0.1;
-  const shoulderX = v.bodyType === 'fighter' ? 0.44 : 0.36;
-  const armColor = v.shirt === null ? v.skin : v.sleeve;
-  addBox(group, new THREE.Vector3(0.16, 0.46, 0.16), new THREE.Vector3(-shoulderX, armY, 0.03), armColor, 0.045, { rotation: { z: -0.15 } });
-  addBox(group, new THREE.Vector3(0.16, 0.46, 0.16), new THREE.Vector3(shoulderX, armY, 0.03), armColor, 0.045, { rotation: { z: 0.15 } });
-  const gloveColor = v.glove ? 0x111217 : v.skin;
-  addSphere(group, 0.105, new THREE.Vector3(-shoulderX - 0.015, -0.18, 0.08), gloveColor, new THREE.Vector3(1, 0.85, 1), 0.035);
-  addSphere(group, 0.105, new THREE.Vector3(shoulderX + 0.015, -0.18, 0.08), gloveColor, new THREE.Vector3(1, 0.85, 1), 0.035);
-
-  if (v.wraps) {
-    addPlainBox(group, new THREE.Vector3(0.18, 0.04, 0.17), new THREE.Vector3(-shoulderX - 0.015, -0.1, 0.105), 0xd32e2e);
-    addPlainBox(group, new THREE.Vector3(0.18, 0.04, 0.17), new THREE.Vector3(shoulderX + 0.015, -0.1, 0.105), 0x2f6bd7);
+  const skin = v.sleeve ?? v.skin;
+  const shoulder = v.style === 'luan' || v.style === 'djonga' ? 0.43 : 0.35;
+  for (const side of [-1, 1]) {
+    const upperColor = v.style === 'joao' ? v.sleeve : v.style === 'djonga' ? v.skin : v.jacket;
+    cyl(group, 0.055, 0.07, 0.42, v3(side * shoulder, 0.16, 0.02), upperColor, { outline: 0.03, rot: { z: side * 0.2 } });
+    cyl(group, 0.05, 0.055, 0.36, v3(side * (shoulder + 0.04), -0.12, 0.09), skin, { outline: 0.028, rot: { z: side * 0.15 } });
   }
-  if (v.wristBands) {
-    addPlainBox(group, new THREE.Vector3(0.17, 0.04, 0.17), new THREE.Vector3(-shoulderX - 0.015, -0.11, 0.105), v.wristBands);
-    addPlainBox(group, new THREE.Vector3(0.17, 0.04, 0.17), new THREE.Vector3(shoulderX + 0.015, -0.11, 0.105), v.wristBands);
+  if (v.style === 'djonga') {
+    sphere(group, 0.17, v3(-0.52, -0.02, 0.22), 0x111111, v3(1.15, 0.9, 1.25), { outline: 0.055 });
+    sphere(group, 0.17, v3(0.52, -0.02, 0.22), 0x111111, v3(1.15, 0.9, 1.25), { outline: 0.055 });
+    plainBox(group, v3(0.2, 0.04, 0.12), v3(-0.52, 0.08, 0.25), 0xd62d2d);
+    plainBox(group, v3(0.2, 0.04, 0.12), v3(0.52, 0.08, 0.25), 0x2764c8);
   }
-  if (v.watch) addPlainBox(group, new THREE.Vector3(0.11, 0.045, 0.175), new THREE.Vector3(shoulderX + 0.02, -0.1, 0.11), 0x0a0c10);
 }
 
 function addLegs(group, v) {
-  addBox(group, new THREE.Vector3(0.18, 0.43, 0.18), new THREE.Vector3(-0.15, -0.5, 0), v.pants, 0.045);
-  addBox(group, new THREE.Vector3(0.18, 0.43, 0.18), new THREE.Vector3(0.15, -0.5, 0), v.pants, 0.045);
-  if (v.bodyType === 'fighter') {
-    addBox(group, new THREE.Vector3(0.22, 0.15, 0.2), new THREE.Vector3(-0.15, -0.29, 0.03), 0xb71f28, 0.035);
-    addBox(group, new THREE.Vector3(0.22, 0.15, 0.2), new THREE.Vector3(0.15, -0.29, 0.03), 0x2764c8, 0.035);
+  if (v.style === 'djonga') {
+    box(group, v3(0.52, 0.2, 0.28), v3(0, -0.28, 0.03), v.pants, { outline: 0.045 });
+    plainBox(group, v3(0.22, 0.19, 0.03), v3(-0.14, -0.25, 0.2), 0xd62d2d);
+    plainBox(group, v3(0.22, 0.19, 0.03), v3(0.14, -0.25, 0.2), 0x2764c8);
+    cyl(group, 0.06, 0.075, 0.44, v3(-0.16, -0.58, 0.02), v.skin, { outline: 0.035 });
+    cyl(group, 0.06, 0.075, 0.44, v3(0.16, -0.58, 0.02), v.skin, { outline: 0.035 });
+    return;
   }
-  if (v.cargoPockets) {
-    addPlainBox(group, new THREE.Vector3(0.16, 0.14, 0.045), new THREE.Vector3(-0.28, -0.46, 0.13), 0x222831);
-    addPlainBox(group, new THREE.Vector3(0.16, 0.14, 0.045), new THREE.Vector3(0.28, -0.46, 0.13), 0x222831);
+  for (const x of [-0.16, 0.16]) {
+    box(group, v3(0.2, 0.48, 0.2), v3(x, -0.44, 0), v.pants, { outline: 0.04 });
+    box(group, v3(0.24, 0.13, 0.38), v3(x, -0.78, 0.12), v.shoe, { outline: 0.035 });
+    plainBox(group, v3(0.18, 0.025, 0.2), v3(x, -0.71, 0.18), v.shoeAccent);
   }
-  addBox(group, new THREE.Vector3(0.22, 0.12, 0.34), new THREE.Vector3(-0.15, -0.78, 0.11), v.shoe, 0.04);
-  addBox(group, new THREE.Vector3(0.22, 0.12, 0.34), new THREE.Vector3(0.15, -0.78, 0.11), v.shoe, 0.04);
-  addPlainBox(group, new THREE.Vector3(0.17, 0.025, 0.18), new THREE.Vector3(-0.15, -0.715, 0.17), v.shoeAccent);
-  addPlainBox(group, new THREE.Vector3(0.17, 0.025, 0.18), new THREE.Vector3(0.15, -0.715, 0.17), v.shoeAccent);
+  if (v.style === 'lorenzo') {
+    plainBox(group, v3(0.16, 0.14, 0.04), v3(-0.31, -0.43, 0.15), 0x222831);
+    plainBox(group, v3(0.16, 0.14, 0.04), v3(0.31, -0.43, 0.15), 0x222831);
+  }
 }
 
 function addAccessories(group, v) {
-  if (v.necklace) {
-    addPlainBox(group, new THREE.Vector3(0.018, 0.27, 0.018), new THREE.Vector3(-0.055, 0.22, 0.205), 0xd8d8d8, { rotation: { z: -0.25 } });
-    addPlainBox(group, new THREE.Vector3(0.018, 0.27, 0.018), new THREE.Vector3(0.055, 0.22, 0.205), 0xd8d8d8, { rotation: { z: 0.25 } });
-    addSphere(group, 0.035, new THREE.Vector3(0, 0.08, 0.225), 0xe9e2d0, new THREE.Vector3(0.75, 1, 0.75), 0.025);
+  if (v.style !== 'djonga') {
+    plainBox(group, v3(0.018, 0.28, 0.018), v3(-0.06, 0.25, 0.28), 0xd8d8d8, { rot: { z: -0.25 } });
+    plainBox(group, v3(0.018, 0.28, 0.018), v3(0.06, 0.25, 0.28), 0xd8d8d8, { rot: { z: 0.25 } });
+    sphere(group, 0.035, v3(0, 0.1, 0.3), 0xe9e2d0, v3(0.75, 1, 0.75), { outline: 0.015 });
   }
-  if (v.beltChain) {
-    for (let i = 0; i < 5; i++) {
-      addBox(group, new THREE.Vector3(0.045, 0.035, 0.03), new THREE.Vector3(0.25 + i * 0.045, -0.22 - i * 0.025, 0.2), 0xc6c6c6, 0.018, { rotation: { z: 0.5 } });
+  if (v.style === 'luan') {
+    for (let i = 0; i < 7; i++) box(group, v3(0.045, 0.035, 0.03), v3(0.22 + i * 0.045, -0.22 - i * 0.026, 0.24), 0xc6c6c6, { outline: 0.014, rot: { z: 0.5 } });
+  }
+  if (v.style === 'ministro') {
+    for (const [x, color] of [[-0.3, 0x39d98a], [0.31, 0xe0b169], [0.05, 0x6dffe0]]) {
+      cyl(group, 0.035, 0.05, 0.22, v3(x, -0.22, 0.24), color, { outline: 0.015 });
     }
-  }
-  if (v.flaskBelt) {
-    for (const [x, color] of [[-0.27, 0x39d98a], [0.28, 0xe0b169]]) {
-      addCylinder(group, 0.035, 0.045, 0.18, new THREE.Vector3(x, -0.24, 0.19), color, 0.018);
-      addPlainBox(group, new THREE.Vector3(0.06, 0.025, 0.035), new THREE.Vector3(x, -0.14, 0.19), 0xd8c294);
-    }
-  }
-  if (v.airpods) {
-    addSphere(group, 0.032, new THREE.Vector3(-0.25, 0.55, 0.07), 0xffffff, new THREE.Vector3(0.75, 1, 0.75), 0.012);
-    addSphere(group, 0.032, new THREE.Vector3(0.25, 0.55, 0.07), 0xffffff, new THREE.Vector3(0.75, 1, 0.75), 0.012);
-  }
-  if (v.emblemShape === 'cross') {
-    addPlainBox(group, new THREE.Vector3(0.12, 0.035, 0.018), new THREE.Vector3(0.17, 0.1, 0.252), v.emblem);
-    addPlainBox(group, new THREE.Vector3(0.035, 0.12, 0.018), new THREE.Vector3(0.17, 0.1, 0.253), v.emblem);
-  } else if (v.emblemShape === 'eye') {
-    addPlainCircle(group, 0.085, new THREE.Vector3(0.17, 0.1, 0.23), v.emblem, { rotation: { y: Math.PI }, segments: 18 });
-    addPlainCircle(group, 0.035, new THREE.Vector3(0.17, 0.1, 0.252), 0xf2dc8a, { rotation: { y: Math.PI }, segments: 12 });
-  } else if (v.emblemShape === 'elixir') {
-    addPlainCircle(group, 0.08, new THREE.Vector3(0.17, 0.1, 0.23), v.emblem, { rotation: { y: Math.PI }, segments: 14 });
-    addPlainBox(group, new THREE.Vector3(0.035, 0.11, 0.018), new THREE.Vector3(0.17, 0.1, 0.253), 0xe7d18d);
-  } else {
-    addPlainCircle(group, 0.08, new THREE.Vector3(0.17, 0.1, 0.23), v.emblem, { rotation: { y: Math.PI } });
   }
 }
 
-function addBlueRose(gunPivot, v) {
-  addCylinder(gunPivot, 0.028, 0.035, 0.72, new THREE.Vector3(0, -0.02, 0.65), 0x15273c, 0.025, { rotation: { x: Math.PI / 2 } });
-  addSphere(gunPivot, 0.12, new THREE.Vector3(0, 0.04, 1.05), 0x30a8ff, new THREE.Vector3(1, 0.85, 1), 0.04);
+function addRoseWeapon(g) {
+  cyl(g, 0.028, 0.035, 0.9, v3(0, -0.02, 0.78), 0x15273c, { outline: 0.025, rot: { x: Math.PI / 2 } });
+  sphere(g, 0.15, v3(0, 0.06, 1.28), 0x30a8ff, v3(1, 0.85, 1), { outline: 0.04 });
+  for (let i = 0; i < 7; i++) {
+    const a = (i / 7) * Math.PI * 2;
+    sphere(g, 0.08, v3(Math.cos(a) * 0.09, 0.06 + Math.sin(a) * 0.03, 1.28 + Math.sin(a) * 0.07), i % 2 ? 0x85ddff : 0x1978ff, v3(1.25, 0.5, 0.75), { outline: 0.022 });
+  }
+}
+
+function addSword(g, accent) {
+  box(g, v3(0.16, 0.14, 0.35), v3(0, -0.03, 0.35), 0x15161a, { outline: 0.05 });
+  box(g, v3(0.16, 0.085, 1.55), v3(0, 0, 1.08), 0x2a2b30, { outline: 0.055 });
+  box(g, v3(0.045, 0.12, 1.42), v3(0, 0.02, 1.12), accent, { outline: 0.018 });
+}
+
+function addBlades(g, accent) {
+  for (const x of [-0.23, 0.23]) {
+    box(g, v3(0.07, 0.055, 1.0), v3(x, 0, 0.82), accent, { outline: 0.04, rot: { z: x < 0 ? 0.22 : -0.22 } });
+    box(g, v3(0.09, 0.08, 0.22), v3(x, -0.01, 0.36), 0x12203b, { outline: 0.035 });
+  }
+}
+
+function addOrb(g, accent) {
+  sphere(g, 0.29, v3(0, 0.04, 0.8), accent, v3(1, 1, 1), { outline: 0.08 });
+  sphere(g, 0.13, v3(0, 0.04, 0.8), 0xe8d08a, v3(1, 0.85, 1), { outline: 0.025 });
   for (let i = 0; i < 6; i++) {
-    const a = (i / 6) * Math.PI * 2;
-    addSphere(gunPivot, 0.07, new THREE.Vector3(Math.cos(a) * 0.08, 0.04 + Math.sin(a) * 0.025, 1.05 + Math.sin(a) * 0.06), 0x74d8ff, new THREE.Vector3(1.2, 0.55, 0.75), 0.025);
+    const a = i * Math.PI / 3;
+    sphere(g, 0.055, v3(Math.cos(a) * 0.33, Math.sin(a) * 0.16, 0.8 + Math.sin(a) * 0.18), 0xb985ff, v3(1, 1, 1), { outline: 0.018 });
   }
-  addBox(gunPivot, new THREE.Vector3(0.09, 0.05, 0.24), new THREE.Vector3(-0.05, -0.02, 0.78), 0x174e72, 0.025, { rotation: { y: -0.5 } });
 }
 
-function buildWeapon(gunPivot, brawler, visual) {
-  const id = brawler.id;
-
-  if (visual.weapon === 'blueRose') {
-    addBlueRose(gunPivot, visual);
-    return;
+function addCannon(g, accent) {
+  cyl(g, 0.34, 0.23, 0.9, v3(0, 0, 0.78), 0x131a20, { outline: 0.09, rot: { x: Math.PI / 2 }, radial: 22 });
+  cyl(g, 0.27, 0.27, 0.18, v3(0, 0, 1.25), 0x253640, { outline: 0.06, rot: { x: Math.PI / 2 }, radial: 22 });
+  for (let i = 0; i < 8; i++) {
+    const a = i * Math.PI / 4;
+    sphere(g, 0.052, v3(Math.cos(a) * 0.15, Math.sin(a) * 0.11, 1.36), accent, v3(1, 1, 1), { outline: 0.016 });
   }
-
-  if (visual.weapon === 'emberSword' || id === 'luan') {
-    addBox(gunPivot, new THREE.Vector3(0.12, 0.14, 0.34), new THREE.Vector3(0, -0.02, 0.32), 0x1a1b20, 0.06);
-    addBox(gunPivot, new THREE.Vector3(0.12, 0.08, 1.0), new THREE.Vector3(0, 0, 0.84), 0x2a2b30, 0.045);
-    addBox(gunPivot, new THREE.Vector3(0.035, 0.1, 0.92), new THREE.Vector3(0, 0.015, 0.88), brawler.accent, 0.02);
-    return;
-  }
-
-  if (visual.weapon === 'fists' || id === 'djonga') {
-    addSphere(gunPivot, 0.22, new THREE.Vector3(-0.2, 0, 0.55), 0x15151a, new THREE.Vector3(1.1, 0.9, 1.25), 0.08);
-    addSphere(gunPivot, 0.22, new THREE.Vector3(0.2, 0, 0.55), 0x15151a, new THREE.Vector3(1.1, 0.9, 1.25), 0.08);
-    addPlainBox(gunPivot, new THREE.Vector3(0.18, 0.035, 0.15), new THREE.Vector3(-0.2, 0.1, 0.55), 0xd62d2d);
-    addPlainBox(gunPivot, new THREE.Vector3(0.18, 0.035, 0.15), new THREE.Vector3(0.2, 0.1, 0.55), 0x2f6bd7);
-    return;
-  }
-
-  if (visual.weapon === 'shadowBlades' || id === 'thomas') {
-    for (const x of [-0.18, 0.18]) {
-      const blade = addBox(gunPivot, new THREE.Vector3(0.07, 0.055, 0.78), new THREE.Vector3(x, 0, 0.72), brawler.accent, 0.045);
-      blade.rotation.z = x < 0 ? 0.18 : -0.18;
-      addBox(gunPivot, new THREE.Vector3(0.08, 0.08, 0.18), new THREE.Vector3(x, -0.01, 0.34), 0x12203b, 0.04);
-    }
-    return;
-  }
-
-  if (id === 'gui') {
-    addSphere(gunPivot, 0.24, new THREE.Vector3(0, 0.02, 0.74), brawler.accent, new THREE.Vector3(1, 1, 1), 0.08);
-    addSphere(gunPivot, 0.12, new THREE.Vector3(0, 0.02, 0.74), 0xe8d08a, new THREE.Vector3(1, 0.85, 1), 0.03);
-    for (let i = 0; i < 4; i++) {
-      const a = i * Math.PI / 2;
-      addSphere(gunPivot, 0.055, new THREE.Vector3(Math.cos(a) * 0.24, Math.sin(a) * 0.1, 0.74 + Math.sin(a) * 0.14), 0xb985ff, new THREE.Vector3(1, 1, 1), 0.02);
-    }
-    addBox(gunPivot, new THREE.Vector3(0.08, 0.08, 0.42), new THREE.Vector3(0, -0.02, 0.38), 0x19131f, 0.04);
-    return;
-  }
-
-  if (id === 'lorenzo') {
-    addCylinder(gunPivot, 0.22, 0.16, 0.62, new THREE.Vector3(0, 0, 0.62), 0x131a20, 0.08, { rotation: { x: Math.PI / 2 }, radial: 20 });
-    addCylinder(gunPivot, 0.19, 0.19, 0.12, new THREE.Vector3(0, 0, 0.96), 0x253640, 0.06, { rotation: { x: Math.PI / 2 }, radial: 20 });
-    for (let i = 0; i < 6; i++) {
-      const a = i * Math.PI / 3;
-      addSphere(gunPivot, 0.045, new THREE.Vector3(Math.cos(a) * 0.11, Math.sin(a) * 0.08, 1.04), brawler.accent, new THREE.Vector3(1, 1, 1), 0.018);
-    }
-    addBox(gunPivot, new THREE.Vector3(0.16, 0.08, 0.26), new THREE.Vector3(0, -0.12, 0.45), 0x00a79c, 0.025);
-    return;
-  }
-
-  if (id === 'ministro') {
-    addBox(gunPivot, new THREE.Vector3(0.09, 0.09, 0.78), new THREE.Vector3(0, 0, 0.62), 0x18201d, 0.05);
-    addBox(gunPivot, new THREE.Vector3(0.42, 0.055, 0.09), new THREE.Vector3(0, 0.02, 0.54), 0x9b7b3a, 0.03);
-    addCylinder(gunPivot, 0.045, 0.085, 0.24, new THREE.Vector3(0, 0, 1.02), brawler.accent, 0.035, { rotation: { x: Math.PI / 2 } });
-    addSphere(gunPivot, 0.075, new THREE.Vector3(0, -0.08, 0.36), 0x39d98a, new THREE.Vector3(0.85, 1.2, 0.85), 0.025);
-    return;
-  }
-
-  addBox(gunPivot, new THREE.Vector3(0.13, 0.13, 0.7), new THREE.Vector3(0, 0, 0.58), COLORS.gunMetal, 0.07);
-  addSphere(gunPivot, 0.18, new THREE.Vector3(0, 0.02, 0.98), brawler.accent, new THREE.Vector3(1, 0.75, 1), 0.06);
+  box(g, v3(0.2, 0.11, 0.34), v3(0, -0.19, 0.55), 0x00a79c, { outline: 0.025 });
 }
 
-
-function bodyScaleFor(v) {
-  if (v.bodyType === 'fighter') return new THREE.Vector3(1.08, 1.05, 1.05);
-  if (v.bodyType === 'athletic') return new THREE.Vector3(1.04, 1.02, 1.02);
-  if (v.bodyType === 'slim') return new THREE.Vector3(0.92, 1.02, 0.94);
-  return new THREE.Vector3(1, 1, 1);
+function addDart(g, accent) {
+  box(g, v3(0.1, 0.1, 0.98), v3(0, 0, 0.78), 0x18201d, { outline: 0.045 });
+  box(g, v3(0.48, 0.06, 0.1), v3(0, 0.02, 0.63), 0x9b7b3a, { outline: 0.025 });
+  cyl(g, 0.045, 0.085, 0.3, v3(0, 0, 1.35), accent, { outline: 0.03, rot: { x: Math.PI / 2 } });
+  sphere(g, 0.08, v3(0, -0.1, 0.42), accent, v3(0.85, 1.2, 0.85), { outline: 0.025 });
 }
 
-function weaponScaleFor(v) {
-  if (v.weapon === 'emberSword') return new THREE.Vector3(1.08, 1.08, 1.08);
-  if (v.weapon === 'medCannon') return new THREE.Vector3(1.18, 1.18, 1.18);
-  if (v.weapon === 'fists') return new THREE.Vector3(1.08, 1.08, 1.08);
-  return new THREE.Vector3(1, 1, 1);
+function addFists(g) {
+  sphere(g, 0.28, v3(-0.25, 0, 0.62), 0x111111, v3(1.18, 0.92, 1.35), { outline: 0.08 });
+  sphere(g, 0.28, v3(0.25, 0, 0.62), 0x111111, v3(1.18, 0.92, 1.35), { outline: 0.08 });
+  plainBox(g, v3(0.23, 0.045, 0.16), v3(-0.25, 0.13, 0.62), 0xd62d2d);
+  plainBox(g, v3(0.23, 0.045, 0.16), v3(0.25, 0.13, 0.62), 0x2764c8);
+}
+
+function buildWeapon(g, v) {
+  if (v.weapon === 'rose') return addRoseWeapon(g);
+  if (v.weapon === 'sword') return addSword(g, v.accent);
+  if (v.weapon === 'fists') return addFists(g);
+  if (v.weapon === 'blades') return addBlades(g, v.accent);
+  if (v.weapon === 'orb') return addOrb(g, v.accent);
+  if (v.weapon === 'cannon') return addCannon(g, v.accent);
+  if (v.weapon === 'dart') return addDart(g, v.accent);
 }
 
 export function buildBrawlerMesh(bodyColor, brawlerId = 'joao') {
   const brawler = getBrawler(brawlerId);
-  const visual = visualFor(brawler);
+  const v = VISUALS[brawler.id] || VISUALS.joao;
   const root = new THREE.Object3D();
   root.userData.brawlerId = brawler.id;
 
   const bodyPivot = new THREE.Object3D();
   bodyPivot.position.set(0, BODY_HEIGHT, 0);
+  bodyPivot.scale.set(v.scale[0], v.scale[1], v.scale[2]);
   root.add(bodyPivot);
 
-  addLegs(bodyPivot, visual);
-  addTorso(bodyPivot, visual);
-  addArms(bodyPivot, visual);
-  addHead(bodyPivot, visual);
-  addHair(bodyPivot, visual);
-  addAccessories(bodyPivot, visual);
+  addLegs(bodyPivot, v);
+  addTorso(bodyPivot, v);
+  addArms(bodyPivot, v);
+  addHead(bodyPivot, v);
+  addHair(bodyPivot, v);
+  addAccessories(bodyPivot, v);
 
   const gunPivot = new THREE.Object3D();
-  gunPivot.position.set(0, BODY_HEIGHT, 0.02);
+  gunPivot.position.set(0, BODY_HEIGHT + 0.02, 0.04);
+  gunPivot.scale.setScalar(v.weapon === 'cannon' ? 1.25 : v.weapon === 'sword' ? 1.18 : v.weapon === 'fists' ? 1.12 : 1);
   root.add(gunPivot);
-  buildWeapon(gunPivot, brawler, visual);
+  buildWeapon(gunPivot, v);
 
-  const shadowGeo = new THREE.CircleGeometry(PLAYER_RADIUS * 0.85, 20);
+  const shadowGeo = new THREE.CircleGeometry(PLAYER_RADIUS * 0.95, 24);
   const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.28 });
   const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
   shadowMesh.rotation.x = -Math.PI / 2;
   shadowMesh.position.y = 0.02;
   root.add(shadowMesh);
-
-  bodyPivot.scale.copy(bodyScaleFor(visual));
-  gunPivot.scale.copy(weaponScaleFor(visual));
 
   return { root, bodyPivot, gunPivot, shadowMesh };
 }
@@ -607,10 +337,6 @@ export function setMeshOpacity(root, shadowMesh, opacity) {
   root.traverse(obj => {
     if (obj.isMesh && obj.material && obj !== shadowMesh) {
       obj.material.transparent = opacity < 0.99;
-      obj.material.opacity = opacity;
-    }
-    if (obj.isSprite && obj.material) {
-      obj.material.transparent = true;
       obj.material.opacity = opacity;
     }
   });

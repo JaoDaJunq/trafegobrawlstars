@@ -96,3 +96,26 @@ A prioridade desta fase foi deixar o personagem em jogo o mais fiel possível à
 - Thomas fica invisível para outros jogadores durante a Super.
 - Jogadores dentro de moitas ficam invisíveis para inimigos fora da mesma moita. Se os dois estiverem na mesma moita, eles se enxergam.
 - Preview de alcance com Shift recebeu prioridade visual para aparecer por cima do chão e do cenário.
+
+## Fase 11 · Battle Royale / Silhueta / Névoa
+
+Mudanças desta versão:
+
+- Arena ampliada para 100 x 80.
+- Spawns fixos e bem separados usando uma lista global em `src/constants.js`.
+- Moitas com geração visual determinística: todos os clientes veem as moitas no mesmo local e no mesmo formato geral.
+- Removido o sprite 2D colado no personagem jogável.
+- Personagens voltaram a ser 3D modular, com silhuetas mais exageradas:
+  - João: jaqueta/hoodie e rosa azul grande.
+  - Luan: corpo mais forte e espada longa vermelha.
+  - Djonga: lutador sem camisa, shorts e luvas grandes.
+  - Thomas: corpo slim, cabelo claro e lâminas duplas.
+  - Gui: visual arcano com orbe roxo grande.
+  - Lorenzo: canhão médico grande, rig técnico e hoodie.
+  - Ministro: puffer, cabelo cacheado e dardos/frascos verdes.
+- Névoa tóxica circular ao redor do mapa, fechando em 5 minutos.
+- HUD com contador de vivos, tempo restante e porcentagem aproximada da zona segura.
+- Ao zerar vida, o jogador é eliminado, não respawna automaticamente e entra em modo espectador.
+- Em modo espectador, a câmera abre para uma visão maior do mapa.
+- Thomas continua ficando invisível para outros jogadores na Ultimate.
+- Jogadores dentro de moita ficam invisíveis para inimigos fora dela; se estiverem na mesma moita, conseguem se ver.
